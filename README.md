@@ -1,4 +1,4 @@
-# **SFHound - Six Degrees of System Administrator**
+# **SFHound**
 
 
 ## Brief
