@@ -20,7 +20,7 @@ SalesforceHound collects the data necessary to:
 ## Limitations
 
 SalesforceHound has only been tested against Developer Edition and sandbox orgs. It may not scale to large production environments as written.
-We would greatly appreciate your feedback on any performance or visibility issues you encounter.
+I would greatly appreciate your feedback on any performance or visibility issues you encounter.
 
 - Individual SharingRule metadata (AccountSharingRule, etc.) requires the Salesforce Metadata API and is not currently extracted. OWD settings are captured per object.
 - Queue and group membership in very large orgs (100,000+ GroupMember records) may be slow to extract.
