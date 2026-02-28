@@ -3,7 +3,10 @@ OpenGraph-Documentation
 Salesforce-Documentation
 salesforce-opengraph/config.yaml
 salesforce-opengraph/sfscan.pem
+sf-opengraph/config.yaml
+sf-opengraph/sfscan.pem
 .github/prompts
 *\__pycache__
 salesforce-opengraph/opengraph_output/*
+sf-opengraph/opengraph_output/*
 .vscode
