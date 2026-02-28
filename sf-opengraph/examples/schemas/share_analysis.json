@@ -1,0 +1,428 @@
+[
+  {
+    "object": "AccountShare",
+    "describe": {
+      "name": "AccountShare",
+      "label": "Account Share",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Account Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "AccountId",
+          "type": "reference",
+          "label": "Account ID",
+          "referenceTo": [
+            "Account"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "AccountAccessLevel",
+          "type": "picklist",
+          "label": "Account Access",
+          "referenceTo": []
+        },
+        {
+          "name": "OpportunityAccessLevel",
+          "type": "picklist",
+          "label": "Opportunity Access",
+          "referenceTo": []
+        },
+        {
+          "name": "CaseAccessLevel",
+          "type": "picklist",
+          "label": "Case Access",
+          "referenceTo": []
+        },
+        {
+          "name": "ContactAccessLevel",
+          "type": "picklist",
+          "label": "Contact Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  },
+  {
+    "object": "ContactShare",
+    "describe": {
+      "name": "ContactShare",
+      "label": "Contact Share",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Contact Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "ContactId",
+          "type": "reference",
+          "label": "Contact ID",
+          "referenceTo": [
+            "Contact"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "ContactAccessLevel",
+          "type": "picklist",
+          "label": "Contact Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  },
+  {
+    "object": "OpportunityShare",
+    "describe": {
+      "name": "OpportunityShare",
+      "label": "Opportunity Share",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Opportunity Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "OpportunityId",
+          "type": "reference",
+          "label": "Opportunity ID",
+          "referenceTo": [
+            "Opportunity"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "OpportunityAccessLevel",
+          "type": "picklist",
+          "label": "Opportunity Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  },
+  {
+    "object": "LeadShare",
+    "describe": {
+      "name": "LeadShare",
+      "label": "Lead Share",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Lead Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "LeadId",
+          "type": "reference",
+          "label": "Lead ID",
+          "referenceTo": [
+            "Lead"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "LeadAccessLevel",
+          "type": "picklist",
+          "label": "Lead Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  },
+  {
+    "object": "CaseShare",
+    "describe": {
+      "name": "CaseShare",
+      "label": "Case Share",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Case Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "CaseId",
+          "type": "reference",
+          "label": "Case ID",
+          "referenceTo": [
+            "Case"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "CaseAccessLevel",
+          "type": "picklist",
+          "label": "Case Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  },
+  {
+    "object": "SecretData__Share",
+    "describe": {
+      "name": "SecretData__Share",
+      "label": "Share: SecretData",
+      "queryable": true,
+      "fields": [
+        {
+          "name": "Id",
+          "type": "id",
+          "label": "Custom Object Share ID",
+          "referenceTo": []
+        },
+        {
+          "name": "ParentId",
+          "type": "reference",
+          "label": "Parent ID",
+          "referenceTo": [
+            "SecretData__c"
+          ]
+        },
+        {
+          "name": "UserOrGroupId",
+          "type": "reference",
+          "label": "User/Group ID",
+          "referenceTo": [
+            "Group",
+            "User"
+          ]
+        },
+        {
+          "name": "AccessLevel",
+          "type": "picklist",
+          "label": "Custom Object Access",
+          "referenceTo": []
+        },
+        {
+          "name": "RowCause",
+          "type": "picklist",
+          "label": "Row Cause",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedDate",
+          "type": "datetime",
+          "label": "Last Modified Date",
+          "referenceTo": []
+        },
+        {
+          "name": "LastModifiedById",
+          "type": "reference",
+          "label": "Last Modified By ID",
+          "referenceTo": [
+            "User"
+          ]
+        },
+        {
+          "name": "IsDeleted",
+          "type": "boolean",
+          "label": "Deleted",
+          "referenceTo": []
+        }
+      ]
+    },
+    "sample_shares": [],
+    "row_cause_values": {},
+    "access_levels": {}
+  }
+]

@@ -1,0 +1,734 @@
+[
+  {
+    "name": "AccountBrandShare",
+    "label": "Account Brand Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AccountShare",
+    "label": "Account Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ActivationTargetPlatformShare",
+    "label": "Activation Target Platform Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ActivationTargetShare",
+    "label": "Activation Target Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ActivationTrgtIntOrgAccessShare",
+    "label": "Activation Target Internal Organization Access Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ActvTgtPlatformFieldValueShare",
+    "label": "Activation Target Platform Field Value Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AgentWorkShare",
+    "label": "Agent Work Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AlternativePaymentMethodShare",
+    "label": "Alternative Payment Method Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AppointmentInvitationShare",
+    "label": "Appointment Invitation Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AssetShare",
+    "label": "Asset Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AuthorizationFormConsentShare",
+    "label": "Authorization Form Consent Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AuthorizationFormDataUseShare",
+    "label": "Authorization Form Data Use Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "AuthorizationFormShare",
+    "label": "Authorization Form Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "BusinessBrandShare",
+    "label": "Business Brand Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "BuyerGroupShare",
+    "label": "Buyer Group Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CalendarViewShare",
+    "label": "Calendar Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CampaignShare",
+    "label": "Campaign Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CaseShare",
+    "label": "Case Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ChangeRequestShare",
+    "label": "Change Request Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ChannelProgramLevelShare",
+    "label": "Channel Program Level Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ChannelProgramMemberShare",
+    "label": "Channel Program Member Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ChannelProgramShare",
+    "label": "Channel Program Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CommSubscriptionChannelTypeShare",
+    "label": "Communication Subscription Channel Type Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CommSubscriptionConsentShare",
+    "label": "Communication Subscription Consent Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CommSubscriptionShare",
+    "label": "Communication Subscription Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ConsumptionScheduleShare",
+    "label": "Consumption Schedule Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactPointAddressShare",
+    "label": "Contact Point Address Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactPointConsentShare",
+    "label": "Contact Point Consent Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactPointEmailShare",
+    "label": "Contact Point Email Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactPointPhoneShare",
+    "label": "Contact Point Phone Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactPointTypeConsentShare",
+    "label": "Contact Point Type Consent Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactRequestShare",
+    "label": "Contact Request Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ContactShare",
+    "label": "Contact Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CouponShare",
+    "label": "Coupon Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CreditMemoShare",
+    "label": "Credit Memo Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "CustomerShare",
+    "label": "Customer Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "DataActionTargetShare",
+    "label": "Data Action Target Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "DataSourceBundleShare",
+    "label": "Data Source Bundle Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "DataUseLegalBasisShare",
+    "label": "Data Use Legal Basis Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "DataUsePurposeShare",
+    "label": "Data Use Purpose Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "DelegatedAccountShare",
+    "label": "External Managed Account Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "EngagementChannelTypeShare",
+    "label": "Engagement Channel Type Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShare",
+    "label": "Data Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareFeed",
+    "label": "Data Share Feed",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareHistory",
+    "label": "Data Share History",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareTarget",
+    "label": "Data Share Target",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareTargetFeed",
+    "label": "Data Share Target Feed",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareTargetHistory",
+    "label": "Data Share Target History",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExtDataShareTargetShare",
+    "label": "Data Share Target Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ExternalEventMappingShare",
+    "label": "External Event Mapping Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FinanceBalanceSnapshotShare",
+    "label": "Finance Balance Snapshot Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FinanceTransactionShare",
+    "label": "Finance Transaction Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowInterviewLogShare",
+    "label": "Flow Interview Log Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowInterviewShare",
+    "label": "Flow Interview Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowOrchestrationInstanceShare",
+    "label": "Orchestration Run Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowOrchestrationStageInstanceShare",
+    "label": "Orchestration Stage Run Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowOrchestrationStepInstanceShare",
+    "label": "Orchestration Step Run Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowOrchestrationWorkItemShare",
+    "label": "Orchestration Work Item Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FlowTestResultShare",
+    "label": "Flow Test Result Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "FulfillmentOrderShare",
+    "label": "Fulfillment Order Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ImageShare",
+    "label": "Image Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "IncidentShare",
+    "label": "Incident Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "IndividualShare",
+    "label": "Individual Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "InvoiceShare",
+    "label": "Invoice Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "LeadShare",
+    "label": "Lead Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "LegalEntityShare",
+    "label": "Legal Entity Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ListEmailShare",
+    "label": "List Email Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "LocationGroupShare",
+    "label": "Location Group Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "LocationShare",
+    "label": "Location Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MacroShare",
+    "label": "Macro Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MacroUsageShare",
+    "label": "Macro Usage Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MessagingEndUserShare",
+    "label": "Messaging User Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MessagingSessionShare",
+    "label": "Messaging Session Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MktDataTransformShare",
+    "label": "Data Transform Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "MktMLModelShare",
+    "label": "Model Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "OperatingHoursShare",
+    "label": "Operating Hours Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "OpportunityShare",
+    "label": "Opportunity Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "OrderShare",
+    "label": "Order Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PartnerFundAllocationShare",
+    "label": "Partner Fund Allocation Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PartnerFundClaimShare",
+    "label": "Partner Fund Claim Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PartnerFundRequestShare",
+    "label": "Partner Fund Request Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PartnerMarketingBudgetShare",
+    "label": "Partner Marketing Budget Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PartyConsentShare",
+    "label": "Party Consent Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PendingServiceRoutingShare",
+    "label": "Pending Service Routing Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ProblemShare",
+    "label": "Problem Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ProcessExceptionShare",
+    "label": "Process Exception Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ProductCatalogShare",
+    "label": "Catalog Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PromotionSegmentShare",
+    "label": "Promotion Segment Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PromotionShare",
+    "label": "Promotion Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PromptActionShare",
+    "label": "Prompt Action Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "PromptErrorShare",
+    "label": "Prompt Error Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "QuickTextShare",
+    "label": "Quick Text Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "QuickTextUsageShare",
+    "label": "Quick Text Usage Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ReturnOrderShare",
+    "label": "Return Order Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ScorecardShare",
+    "label": "Scorecard Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "SecretData__Share",
+    "label": "Share: SecretData",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "SellerShare",
+    "label": "Seller Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ServiceAppointmentShare",
+    "label": "Service Appointment Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ServiceContractShare",
+    "label": "Service Contract Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ServiceResourceShare",
+    "label": "Service Resource Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ServiceTerritoryShare",
+    "label": "Service Territory Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ShiftShare",
+    "label": "Shift Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "ShipmentShare",
+    "label": "Shipment Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "StreamingChannelShare",
+    "label": "Streaming Channel Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "TodayGoalShare",
+    "label": "Goal Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserAppMenuCustomizationShare",
+    "label": "UserAppMenuCustomization Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserDefinedLabelAssignmentShare",
+    "label": "Label Assignment Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserDefinedLabelShare",
+    "label": "Label Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserEmailPreferredPersonShare",
+    "label": "User Email Preferred Person Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserPrioritizedRecordShare",
+    "label": "User Prioritized Record Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserProvisioningRequestShare",
+    "label": "User Provisioning Request Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserServicePresenceShare",
+    "label": "User Presence Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "UserShare",
+    "label": "User Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "VoiceCallShare",
+    "label": "Voice Call Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WebCartShare",
+    "label": "Cart Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WebStoreShare",
+    "label": "Store Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkOrderShare",
+    "label": "Work Order Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkPlanShare",
+    "label": "Work Plan Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkPlanTemplateShare",
+    "label": "Work Plan Template Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkStepTemplateShare",
+    "label": "Work Step Template Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkTypeGroupShare",
+    "label": "Work Type Group Share",
+    "custom": false,
+    "queryable": true
+  },
+  {
+    "name": "WorkTypeShare",
+    "label": "Work Type Share",
+    "custom": false,
+    "queryable": true
+  }
+]
