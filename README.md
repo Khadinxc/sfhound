@@ -1,5 +1,8 @@
 # **SFHound**
 
+> [!TIP]
+> Want to read the new documentation? Head over to [sfhound.kaibersec.com](https://sfhound.kaibersec.com/)
+
 
 ## Brief
 

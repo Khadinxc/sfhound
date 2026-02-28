@@ -1,0 +1,15 @@
+# Salesforce connection configuration
+salesforce:
+  client_id: YOUR_CLIENT_ID
+  client_secret: YOUR_CLIENT_SECRET
+  username: YOUR_USERNAME
+  private_key: YOUR_PRIVATE_KEY_PATH
+  login_url: https://login.salesforce.com
+  api_version: v56.0
+bloodhound:
+  auto-ingest: false
+  url: http://127.0.0.1:8080
+  username: YOUR_BLOODHOUND_USERNAME
+  password: YOUR_BLOODHOUND_PASSWORD
+env:
+  output_path: ./opengraph_output
