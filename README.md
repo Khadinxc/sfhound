@@ -110,8 +110,16 @@ salesforce:
   login_url: "https://login.salesforce.com"  # Use https://test.salesforce.com for sandboxes
   api_version: "v56.0"
 
-output:
-  path: "./opengraph_output"
+# Optional: BloodHound CE auto-ingest
+# Set auto-ingest: true to always upload after every run, or leave false and use --auto-ingest flag
+bloodhound:
+  url: "http://127.0.0.1:8080"
+  username: "admin"
+  password: "YOUR_BLOODHOUND_PASSWORD"
+  auto-ingest: false
+
+env:
+  output_path: "./opengraph_output"
 ```
 
 > **Note:** `client_id` is the "Consumer Key" from your Connected App's "Manage Consumer Details" page.
@@ -160,6 +168,10 @@ python sfhound.py \
 | `--login-url` | Salesforce login URL | `https://login.salesforce.com` |
 | `--api-version` | Salesforce API version | `v56.0` |
 | `--output-path` | Output directory for JSON files | `./opengraph_output` |
+| `--auto-ingest` | Upload graph to BloodHound CE after export | Off |
+| `--bh-url` | BloodHound CE base URL | `http://127.0.0.1:8080` |
+| `--bh-username` | BloodHound CE admin username | From config |
+| `--bh-password` | BloodHound CE admin password | From config |
 
 ### 6. Register Custom Icons in BloodHound
 
@@ -169,7 +181,33 @@ python examples/post_custom_icons.py
 
 ### 7. Load Data into BloodHound
 
-Drag and drop the output JSON file into BloodHound's file upload modal.
+#### Option A — Auto-ingest (recommended)
+
+Pass `--auto-ingest` to extract and upload in a single command. BloodHound credentials can come from `config.yaml` or the command line:
+
+```bash
+# Credentials in config.yaml
+python sfhound.py --auto-ingest
+
+# All credentials on the command line (no bloodhound block needed in config.yaml)
+python sfhound.py --auto-ingest \
+  --bh-url http://127.0.0.1:8080 \
+  --bh-username admin \
+  --bh-password YOUR_BLOODHOUND_PASSWORD
+```
+
+What auto-ingest does:
+1. Validates the exported JSON against the OpenGraph schema
+2. Checks for stuck/active jobs in BloodHound and aborts if any exist
+3. Creates a BloodHound file-upload job, uploads the graph, and signals ingestion start
+4. Polls until ingestion completes, printing status every 15 seconds
+5. Prints completed task details including any errors or warnings
+
+> **Note:** Auto-ingest does **not** clear the BloodHound database. If you need a clean slate, clear it manually in the BloodHound UI first.
+
+#### Option B — Manual upload
+
+Drag and drop the output JSON file from `./opengraph_output/` into BloodHound's file upload modal.
 
 
 ## 8. Setup Tier Zero Privilege Zones:
@@ -323,6 +361,20 @@ flowchart TD
 | *(other system permissions)* | `SFProfile` / `SFPermissionSet` | `SFOrganization` | Additional Permissions* flags captured as edge types when true | Yes |
 | `CanAuthorize` | `SFProfile` / `SFPermissionSet` | `SFConnectedApp` | Profile or Permission Set grants users the right to OAuth-authorize this Connected App | Yes |
 | `CreatedBy` | `SFConnectedApp` | `SFUser` | Records the admin who created this Connected App — audit/provenance edge | No |
+
+### Edge Context Properties
+
+All named edges in the table above carry the following contextual properties, visible in the BloodHound edge panel:
+
+| Property | Description |
+|---|---|
+| `General` | What the edge represents and how the permission or relationship works |
+| `AbuseInfo` | How an attacker can exploit this edge — escalation paths, blast radius, and prerequisites |
+| `RemediationInfo` | Actionable steps to restrict or remediate this access, including specific SOQL audit queries where applicable |
+| `OPSEC` | What is and is not logged when this edge is exercised — gaps in standard audit visibility an attacker could exploit |
+| `References` | MITRE ATT&CK technique mapping and Salesforce documentation URLs for the underlying permission or relationship |
+
+> Properties are populated for all edges that have a named entry in `edges.py` (system permissions, object CRUD, assignment, group/access edges). Structural edges emitted dynamically for every `Permissions*` flag not in the named context dictionary carry only the `SystemPermission` property.
 
 ---
 
