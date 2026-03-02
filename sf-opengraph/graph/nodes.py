@@ -237,25 +237,6 @@ class NodeBuilder:
         return Node(node_id, "SFOrganization", props).to_dict()
 
     # ============================================================
-    # SystemPermission Nodes (DEPRECATED)
-    # ============================================================
-    # System permissions are now modeled as edges to the Organization node
-    # rather than as separate nodes. These methods are kept for reference
-    # but should not be used.
-    #
-    # def build_system_permissions(self, system_perms: Iterable[str]) -> List[Dict[str, Any]]:
-    #     """DEPRECATED: System permissions are now edges to Organization node"""
-    #     pass
-    #
-    # def build_system_permissions_from_profiles(self, profiles: Dict[str, Any]) -> List[Dict[str, Any]]:
-    #     """DEPRECATED: System permissions are now edges to Organization node"""
-    #     pass
-    #
-    # def build_system_permissions_from_permission_sets(self, permsets: Dict[str, Any]) -> List[Dict[str, Any]]:
-    #     """DEPRECATED: System permissions are now edges to Organization node"""
-    #     pass
-
-    # ============================================================
     # Group Nodes
     # ============================================================
 
