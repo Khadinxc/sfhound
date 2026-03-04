@@ -213,7 +213,7 @@ What auto-ingest does:
 Drag and drop the output JSON file from `./opengraph_output/` into BloodHound's file upload modal.
 
 
-## 8. Setup Tier Zero Privilege Zones:
+### 8. Setup Tier Zero Privilege Zones:
 
 You can define the Tier Zero zone rule in the Bloodhound GUI for System Level permissions capable of compromising a Salesforce Organisation with this Cypher Query:
 ```
@@ -709,6 +709,73 @@ WHERE obj.InternalSharingModel <> obj.ExternalSharingModel
 RETURN obj
 LIMIT 50
 ```
+
+## Extending the Graph
+
+Adding new node and edge types is now a three-step process thanks to [bhopengraph](https://github.com/p0dalirius/bhopengraph) native classes. 
+
+### Adding a new Node type
+
+**1. Add a builder method in [`graph/nodes.py`](sf-opengraph/graph/nodes.py):**
+
+```python
+def build_my_thing(self, records: list) -> list:
+    nodes = []
+    for r in records:
+        props = {"name": r.get("Name"), "someField": r.get("SomeField__c")}
+        nodes.append(make_node(r["Id"], "SFMyThing", props))
+    return nodes
+```
+
+`make_node()` automatically normalises the ID (strip + uppercase), drops `None` and non-primitive values, and sets `objectid`.
+
+**2. Call it in the main pipeline in [`sfhound.py`](sf-opengraph/sfhound.py):**
+
+```python
+for node in node_builder.build_my_thing(my_thing_data):
+    graph.add_or_merge_node(node)
+```
+
+`add_or_merge_node()` handles deduplication automatically — if the same ID is emitted by multiple builders the kinds are unioned and properties are merged (last-write wins).
+
+**3. Optionally register the kind label for summary output in [`graph/sfgraph.py`](sf-opengraph/graph/sfgraph.py):**
+
+```python
+"SFMyThing": "my things",
+```
+
+---
+
+### Adding a new Edge type
+
+**1. Register the edge kind string in [`graph/edges.py`](sf-opengraph/graph/edges.py) under `EdgeKinds`:**
+
+```python
+MY_THING_RELATION = "SFMyThingRelation"
+```
+
+**2. Add a builder method in the same file:**
+
+```python
+def build_my_thing_edges(self, records: list) -> list:
+    edges = []
+    for r in records:
+        edges.append(_make_edge(r["Id"], r["RelatedId"], EdgeKinds.MY_THING_RELATION))
+    return edges
+```
+
+`_make_edge()` normalises start/end IDs and filters non-primitive properties. Pass an optional `properties` dict as the fourth argument for context that should appear in the BloodHound edge panel.
+
+**3. Call it in the main pipeline in [`sfhound.py`](sf-opengraph/sfhound.py):**
+
+```python
+for edge in edge_builder.build_my_thing_edges(my_thing_data):
+    graph.add_edge_without_validation(edge)
+```
+
+`check_dangling()` runs automatically at export time and will flag any edges whose endpoint nodes are missing from the graph, so wiring mistakes are caught immediately.
+
+---
 
 ## Contributing
 

@@ -2,6 +2,40 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Set
 
+from bhopengraph.Edge import Edge as _BHEdge
+from bhopengraph.Properties import Properties as _BHProperties
+
+_PRIMITIVE_TYPES = (str, int, float, bool)
+
+
+def _make_edge(
+    start: str,
+    end: str,
+    kind: str,
+    properties: Optional[Dict[str, Any]] = None,
+) -> _BHEdge:
+    """
+    Create a bhopengraph.Edge from sfhound collector data.
+
+    - Normalises start/end IDs (strip + uppercase)
+    - Drops None and non-primitive property values before passing to
+      bhopengraph.Properties (which only accepts str/int/float/bool and
+      homogeneous primitive lists — the rich context strings in this module
+      are all str so they pass through cleanly)
+    - Returns a bhopengraph.Edge ready for graph.add_edge_without_validation()
+    """
+    start = _norm_sf_id(start) or start
+    end = _norm_sf_id(end) or end
+    bh_props: Optional[_BHProperties] = None
+    if properties:
+        clean = {
+            k: v for k, v in properties.items()
+            if v is not None and isinstance(v, _PRIMITIVE_TYPES)
+        }
+        if clean:
+            bh_props = _BHProperties(**clean)
+    return _BHEdge(start, end, kind, bh_props)
+
 
 def _norm_sf_id(v: str | None) -> str | None:
     if not v:
@@ -1123,27 +1157,12 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
 # -------------------------
 
 class Edge:
-    def __init__(
-        self,
-        start: str,
-        end: str,
-        kind: str,
-        properties: Optional[Dict[str, Any]] = None,
-    ):
-        self.start = _norm_sf_id(start) or start
-        self.end = _norm_sf_id(end) or end
-        self.kind = kind
-        self.properties = properties
-
-    def to_dict(self) -> Dict[str, Any]:
-        edge = {
-            "kind": self.kind,
-            "start": {"match_by": "id", "value": self.start},
-            "end": {"match_by": "id", "value": self.end},
-        }
-        if self.properties is not None:
-            edge["properties"] = self.properties
-        return edge
+    """Backward-compatible shim — callers outside this module should migrate to
+    _make_edge().  Only EdgeBuilder methods inside this file use it."""
+    def __init__(self, start, end, kind, properties=None):
+        self._bh = _make_edge(start, end, kind, properties)
+    def to_dict(self):
+        return self._bh.to_dict()
 
 
 # -------------------------
@@ -1163,7 +1182,7 @@ class EdgeBuilder:
         for u in users.get("records", []):
             profile_id = u.get("ProfileId")
             if profile_id:
-                edges.append(Edge(u["Id"], profile_id, EdgeKinds.ASSIGNED_PROFILE, dict(ctx) if ctx else None).to_dict())
+                edges.append(_make_edge(u["Id"], profile_id, EdgeKinds.ASSIGNED_PROFILE, dict(ctx) if ctx else None))
         return edges
 
     def build_permission_set_assignments(
@@ -1205,7 +1224,7 @@ class EdgeBuilder:
 
             # Source: ASSIGNMENT_EDGE_CONTEXT dict defined in this module
             ctx = ASSIGNMENT_EDGE_CONTEXT.get(EdgeKinds.ASSIGNED_PERMISSION_SET)
-            edges.append(Edge(assignee, permset, EdgeKinds.ASSIGNED_PERMISSION_SET, dict(ctx) if ctx else None).to_dict())
+            edges.append(_make_edge(assignee, permset, EdgeKinds.ASSIGNED_PERMISSION_SET, dict(ctx) if ctx else None))
 
         return edges
 
@@ -1237,7 +1256,7 @@ class EdgeBuilder:
             if ctx:
                 props.update(ctx)
 
-            edges.append(Edge(user_id, psg_id, EdgeKinds.ASSIGNED_PERMISSION_SET_GROUP, props or None).to_dict())
+            edges.append(_make_edge(user_id, psg_id, EdgeKinds.ASSIGNED_PERMISSION_SET_GROUP, props or None))
 
         return edges
 
@@ -1270,7 +1289,7 @@ class EdgeBuilder:
             if ctx:
                 props.update(ctx)
 
-            edges.append(Edge(psg_id, ps_id, EdgeKinds.INCLUDES_PERMISSION_SET, props or None).to_dict())
+            edges.append(_make_edge(psg_id, ps_id, EdgeKinds.INCLUDES_PERMISSION_SET, props or None))
 
         return edges
 
@@ -1281,7 +1300,7 @@ class EdgeBuilder:
         for u in users.get("records", []):
             role_id = u.get("UserRoleId")
             if role_id:
-                edges.append(Edge(u["Id"], role_id, EdgeKinds.HAS_ROLE, dict(ctx) if ctx else None).to_dict())
+                edges.append(_make_edge(u["Id"], role_id, EdgeKinds.HAS_ROLE, dict(ctx) if ctx else None))
         return edges
 
     def build_group_memberships(self, group_members: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1317,12 +1336,12 @@ class EdgeBuilder:
             if mem_ctx:
                 mem_props.update(mem_ctx)
             edges.append(
-                Edge(
+                _make_edge(
                     member,
                     group,
                     EdgeKinds.MEMBER_OF_GROUP,
-                    properties=mem_props,
-                ).to_dict()
+                    mem_props,
+                )
             )
 
             # Group -> Member (UI-friendly so the Group "Members" panel can populate)
@@ -1332,12 +1351,12 @@ class EdgeBuilder:
             if has_ctx:
                 has_props.update(has_ctx)
             edges.append(
-                Edge(
+                _make_edge(
                     group,
                     member,
-                    EdgeKinds.HAS_MEMBER,  # make sure this exists in EdgeKinds
-                    properties=has_props,
-                ).to_dict()
+                    EdgeKinds.HAS_MEMBER,
+                    has_props,
+                )
             )
 
         return edges
@@ -1353,7 +1372,7 @@ class EdgeBuilder:
         for r in roles.get("records", []):
             parent = r.get("ParentRoleId")
             if parent:
-                edges.append(Edge(r["Id"], parent, EdgeKinds.INHERITS_ROLE, dict(ctx) if ctx else None).to_dict())
+                edges.append(_make_edge(r["Id"], parent, EdgeKinds.INHERITS_ROLE, dict(ctx) if ctx else None))
         return edges
 
     # -------------------------
@@ -1377,7 +1396,7 @@ class EdgeBuilder:
             ps_id = ps.get("Id")
             profile_id = ps.get("ProfileId")
             if ps_id and profile_id:
-                edges.append(Edge(profile_id, ps_id, EdgeKinds.HAS_PERMISSION_SET, dict(ctx) if ctx else None).to_dict())
+                edges.append(_make_edge(profile_id, ps_id, EdgeKinds.HAS_PERMISSION_SET, dict(ctx) if ctx else None))
         return edges
 
     # -------------------------
@@ -1425,12 +1444,12 @@ class EdgeBuilder:
 
                 # Use the permission name as the edge kind
                 edges.append(
-                    Edge(
+                    _make_edge(
                         ps_id,
                         org_node_id,
                         perm_name,  # Edge kind is the permission name
                         props,
-                    ).to_dict()
+                    )
                 )
 
         return edges
@@ -1476,12 +1495,12 @@ class EdgeBuilder:
 
                 # Use the permission name as the edge kind
                 edges.append(
-                    Edge(
+                    _make_edge(
                         pid,
                         org_node_id,
                         perm_name,  # Edge kind is the permission name
                         props,
-                    ).to_dict()
+                    )
                 )
 
         return edges
@@ -1534,12 +1553,12 @@ class EdgeBuilder:
                 props.update(ctx)
 
             edges.append(
-                Edge(
+                _make_edge(
                     queue_id,
                     sobject_node_id,
                     EdgeKinds.CAN_OWN_OBJECT,
                     props,
-                ).to_dict()
+                )
             )
         
         return edges
@@ -1574,12 +1593,12 @@ class EdgeBuilder:
                 props.update(ctx)
 
             edges.append(
-                Edge(
+                _make_edge(
                     app_id,
                     creator_id,
                     EdgeKinds.CREATED_BY,
                     props,
-                ).to_dict()
+                )
             )
 
         return edges
@@ -1627,12 +1646,12 @@ class EdgeBuilder:
                 props.update(ctx)
 
             edges.append(
-                Edge(
+                _make_edge(
                     parent_id,
                     entity_id,
                     EdgeKinds.CAN_AUTHORIZE,
                     props,
-                ).to_dict()
+                )
             )
 
         return edges
@@ -1708,12 +1727,12 @@ class EdgeBuilder:
                         props.update(OBJECT_PERMISSION_CONTEXT[edge_kind])
 
                     edges.append(
-                        Edge(
+                        _make_edge(
                             parent_id,
                             sobject_id,
                             edge_kind,
                             props,
-                        ).to_dict()
+                        )
                     )
 
         return edges
@@ -1770,12 +1789,12 @@ class EdgeBuilder:
                 if ctx:
                     props.update(ctx)
                 edges.append(
-                    Edge(
+                    _make_edge(
                         parent_id,
                         field_name,  # Field name is the node ID
                         EdgeKinds.IS_VISIBLE,
                         props,
-                    ).to_dict()
+                    )
                 )
             elif perm_read:
                 # Read-only permission (ReadOnly edge)
@@ -1786,12 +1805,12 @@ class EdgeBuilder:
                 if ctx:
                     props.update(ctx)
                 edges.append(
-                    Edge(
+                    _make_edge(
                         parent_id,
                         field_name,  # Field name is the node ID
                         EdgeKinds.READ_ONLY,
                         props,
-                    ).to_dict()
+                    )
                 )
 
         return edges

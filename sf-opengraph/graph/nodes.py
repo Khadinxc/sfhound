@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional
+
+from bhopengraph.Node import Node as _BHNode
+from bhopengraph.Properties import Properties as _BHProperties
+
+_PRIMITIVE_TYPES = (str, int, float, bool)
 
 
 def _filter_nulls(d: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in d.items() if v is not None}
+
 
 def _norm_sf_id(v: str | None) -> str | None:
     if not v:
@@ -13,44 +18,29 @@ def _norm_sf_id(v: str | None) -> str | None:
     return v.strip().upper()
 
 
-@dataclass
-class Node:
+def make_node(
+    node_id: str,
+    kinds: Iterable[str] | str,
+    properties: Optional[Dict[str, Any]] = None,
+) -> _BHNode:
     """
-    OpenGraph/BloodHound node.
+    Create a bhopengraph.Node from sfhound collector data.
 
-    - id: globally unique stable identifier
-    - kinds: node labels/types
-    - properties: display + queryable fields
+    - Normalises node_id (strip + uppercase, consistent with Salesforce ID casing)
+    - Converts a bare string kind to a single-element list
+    - Drops None and non-primitive property values (bhopengraph.Properties only
+      accepts str / int / float / bool and homogeneous primitive lists)
+    - Sets 'objectid' to the normalised node_id if not already present
     """
-
-    id: str
-    kinds: List[str]
-    properties: Dict[str, Any]
-
-    def __init__(
-        self,
-        node_id: str,
-        kinds: Iterable[str] | str,
-        properties: Optional[Dict[str, Any]] = None,
-    ):
-        node_id = _norm_sf_id(node_id) or node_id
-        self.id = node_id
-        self.kinds = list(kinds) if not isinstance(kinds, str) else [kinds]
-        self.properties = properties or {}
-
-        # Stable identifier property
-        self.properties.setdefault("objectid", node_id)
-
-    def to_dict(self) -> Dict[str, Any]:
-        node = {
-            "id": self.id,
-            "kinds": self.kinds,
-        }
-
-        if self.properties:
-            node["properties"] = self.properties
-
-        return node
+    node_id = _norm_sf_id(node_id) or node_id
+    kinds_list = [kinds] if isinstance(kinds, str) else list(kinds)
+    props_dict: Dict[str, Any] = dict(properties or {})
+    props_dict.setdefault("objectid", node_id)
+    clean = {
+        k: v for k, v in props_dict.items()
+        if v is not None and isinstance(v, _PRIMITIVE_TYPES)
+    }
+    return _BHNode(node_id, kinds_list, _BHProperties(**clean))
 
 
 class NodeBuilder:
@@ -102,7 +92,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(u["Id"], "SFUser", props).to_dict())
+            nodes.append(make_node(u["Id"], "SFUser", props))
 
         return nodes
 
@@ -122,7 +112,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(p["Id"], "SFProfile", props).to_dict())
+            nodes.append(make_node(p["Id"], "SFProfile", props))
 
         return nodes
 
@@ -151,7 +141,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(ps["Id"], "SFPermissionSet", props).to_dict())
+            nodes.append(make_node(ps["Id"], "SFPermissionSet", props))
 
         return nodes
 
@@ -181,7 +171,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(r["Id"], "SFRole", props).to_dict())
+            nodes.append(make_node(r["Id"], "SFRole", props))
 
         return nodes
     
@@ -201,7 +191,7 @@ class NodeBuilder:
                 "SystemModstamp": g.get("SystemModstamp") or g.get("SystemModStamp"),
             })
 
-            nodes.append(Node(g["Id"], "SFPermissionSetGroup", props).to_dict())
+            nodes.append(make_node(g["Id"], "SFPermissionSetGroup", props))
 
         return nodes
 
@@ -234,7 +224,7 @@ class NodeBuilder:
             "instance_url": instance_url,
         }
         
-        return Node(node_id, "SFOrganization", props).to_dict()
+        return make_node(node_id, "SFOrganization", props)
 
     # ============================================================
     # Group Nodes
@@ -264,7 +254,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(g["Id"], "SFGroup", props).to_dict())
+            nodes.append(make_node(g["Id"], "SFGroup", props))
 
         return nodes
 
@@ -280,7 +270,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(g["Id"], "SFPublicGroup", props).to_dict())
+            nodes.append(make_node(g["Id"], "SFPublicGroup", props))
 
         return nodes
 
@@ -310,7 +300,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(q["Id"], "SFQueue", props).to_dict())
+            nodes.append(make_node(q["Id"], "SFQueue", props))
 
         return nodes
 
@@ -349,7 +339,7 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(app["Id"], "SFConnectedApp", props).to_dict())
+            nodes.append(make_node(app["Id"], "SFConnectedApp", props))
 
         return nodes
 
@@ -408,7 +398,7 @@ class NodeBuilder:
 
             # Use DurableId (API name) as node ID since EntityDefinition.Id is placeholder
             node_id = obj.get("DurableId") or obj.get("QualifiedApiName") or obj.get("Id")
-            nodes.append(Node(node_id, "SFSObject", props).to_dict())
+            nodes.append(make_node(node_id, "SFSObject", props))
 
         return nodes
     def build_fields(self, field_permissions):
@@ -463,6 +453,6 @@ class NodeBuilder:
                 }
             )
 
-            nodes.append(Node(field_name, "SFField", props).to_dict())
+            nodes.append(make_node(field_name, "SFField", props))
 
         return nodes
