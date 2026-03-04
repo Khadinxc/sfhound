@@ -30,71 +30,29 @@ _SUCCESS_STATES  = {2, 8}
 
 class BloodHoundAPI:
         def validate_opengraph_json(self, graph_path):
-            try:
-                with open(graph_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            except Exception as e:
-                print(f'Graph file is not valid JSON: {e}')
+            from bhopengraph.OpenGraph import OpenGraph as _OpenGraph
+            og = _OpenGraph()
+            if not og.import_from_file(graph_path):
+                print('OpenGraph JSON validation failed: could not parse or load file.')
                 return False
 
-            if not isinstance(data, dict):
-                print('Graph file top-level is not a JSON object.')
-                return False
+            node_count = og.get_node_count()
+            edge_count = og.get_edge_count()
 
-            # Accept both { "graph": { "nodes": [], "edges": [] } }
-            # and flat    { "nodes": [], "edges": [] }
-            graph_data = data.get('graph', data)
-            nodes = graph_data.get('nodes', [])
-            edges = graph_data.get('edges', [])
-
-            errors = []
-
-            # --- Nodes ---
-            # OpenGraph node schema: { id, kinds (list), properties (dict) }
-            if not isinstance(nodes, list):
-                errors.append('nodes is not a list.')
-            else:
-                for i, node in enumerate(nodes):
-                    if not isinstance(node, dict):
-                        errors.append(f'Node {i} is not an object.')
-                        continue
-                    if not node.get('id'):
-                        errors.append(f'Node {i} missing id.')
-                    kinds = node.get('kinds')
-                    if not kinds or not isinstance(kinds, list):
-                        errors.append(f'Node {i} missing or invalid kinds (expected list).')
-                    if not isinstance(node.get('properties'), dict):
-                        errors.append(f'Node {i} missing or invalid properties.')
-
-            # --- Edges ---
-            # OpenGraph edge schema: { kind, start: {value, kind}, end: {value, kind}, properties }
-            if not isinstance(edges, list):
-                errors.append('edges is not a list.')
-            else:
-                for i, edge in enumerate(edges):
-                    if not isinstance(edge, dict):
-                        errors.append(f'Edge {i} is not an object.')
-                        continue
-                    if not edge.get('kind'):
-                        errors.append(f'Edge {i} missing kind.')
-                    start = edge.get('start')
-                    if not isinstance(start, dict) or not start.get('value'):
-                        errors.append(f'Edge {i} missing or invalid start.')
-                    end = edge.get('end')
-                    if not isinstance(end, dict) or not end.get('value'):
-                        errors.append(f'Edge {i} missing or invalid end.')
-                    if not isinstance(edge.get('properties'), dict):
-                        errors.append(f'Edge {i} missing or invalid properties.')
-
-            if errors:
-                print(f'OpenGraph JSON validation failed ({len(errors)} error(s)):')
-                for err in errors[:20]:    # cap output — don't flood the terminal
+            # Check for structural schema errors only; isolated nodes are expected
+            # in sfhound graphs (e.g. objects with no permissions yet assigned)
+            # and should not block upload.
+            _is_valid, _errors = og.validate_graph()
+            schema_errors = [e for e in _errors if 'isolated' not in e.lower()]
+            if schema_errors:
+                print(f'OpenGraph JSON validation failed ({len(schema_errors)} schema error(s)):')
+                for err in schema_errors[:20]:
                     print('  -', err)
-                if len(errors) > 20:
-                    print(f'  ... and {len(errors) - 20} more.')
+                if len(schema_errors) > 20:
+                    print(f'  ... and {len(schema_errors) - 20} more.')
                 return False
 
-            print(f'OpenGraph JSON validation passed ({len(nodes)} nodes, {len(edges)} edges).')
+            print(f'OpenGraph JSON validation passed ({node_count} nodes, {edge_count} edges).')
             return True
         def __init__(self, config):
             """

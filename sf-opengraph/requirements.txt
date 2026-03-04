@@ -2,3 +2,4 @@ requests
 PyJWT
 pyaml
 cryptography
+bhopengraph>=1.3.1

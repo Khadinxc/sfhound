@@ -14,9 +14,9 @@ from extractor.auth import SalesforceAuth
 from extractor.metadata import MetadataExtractor
 from extractor.assignments import AssignmentExtractor
 
-from graph.nodes import NodeBuilder
+from graph.nodes import NodeBuilder, make_node
 from graph.edges import EdgeBuilder
-from graph.export import Exporter
+from graph.sfgraph import SFGraph
 from bloodhound_api import BloodHoundAPI
 
 CONFIG_PATH = "config.yaml"
@@ -213,7 +213,7 @@ def hydrate_missing_profiles(metadata_extractor: MetadataExtractor, users: dict,
     return {"records": merged_records}
 
 
-def add_placeholder_profiles_for_users(users: dict, profiles: dict, nodes: list) -> None:
+def add_placeholder_profiles_for_users(users: dict, profiles: dict, graph: "SFGraph") -> None:
     """
     As a final safety net: if Users reference ProfileIds we still don't have
     (API visibility, extraction issues), emit placeholder Profile nodes so
@@ -227,16 +227,8 @@ def add_placeholder_profiles_for_users(users: dict, profiles: dict, nodes: list)
         return
 
     for pid in missing:
-        nodes.append(
-            {
-                "id": pid,
-                "kinds": ["SFProfile"],
-                "properties": {
-                    "objectid": pid,
-                    "name": pid,     # fallback display
-                    "missing": True, # helpful flag for later debugging
-                },
-            }
+        graph.add_or_merge_node(
+            make_node(pid, ["SFProfile"], {"name": pid, "missing": True})
         )
 
     print(f"[!] Added {len(missing)} placeholder Profile nodes to prevent dangling edges.")
@@ -314,25 +306,32 @@ def main():
     # Normalize nodes
     # -----------------------------
     node_builder = NodeBuilder()
-    nodes = []
+    graph = SFGraph()
 
     # Organization node (represents the Salesforce org itself)
     # System-level permissions will be edges to this node
     org_node = node_builder.build_organization(auth.instance_url)
-    org_node_id = org_node["id"]
-    nodes.append(org_node)
+    org_node_id = org_node.id
+    graph.add_or_merge_node(org_node)
 
     # Core identity/meta nodes
-    nodes += node_builder.build_users(users)
-    nodes += node_builder.build_profiles(profiles)
-    nodes += node_builder.build_permission_sets(permission_sets)
-    nodes += node_builder.build_roles(user_roles)
+    for node in node_builder.build_users(users):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_profiles(profiles):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_permission_sets(permission_sets):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_roles(user_roles):
+        graph.add_or_merge_node(node)
 
     # Hydrate aggregate/system PermissionSet nodes that are not returned by
     # SELECT FROM PermissionSet. Salesforce generates internal PermSets for
     # PermissionSetGroups whose IDs appear in ObjectPermissions.ParentId but
     # are not queryable as standalone PermissionSet records.
-    _ps_node_ids = {n["id"] for n in nodes if "SFPermissionSet" in n.get("kinds", []) or "SFProfile" in n.get("kinds", [])}
+    _ps_node_ids = {
+        nid for nid, n in graph.nodes.items()
+        if any(k in ("SFPermissionSet", "SFProfile") for k in n.kinds)
+    }
     _ps_parent_map = {}  # normalized -> original
     for _perm in (*object_permissions.get("records", []), *field_permissions.get("records", [])):
         _pid = _perm.get("ParentId")
@@ -341,55 +340,64 @@ def main():
     _missing_ps = {orig for norm, orig in _ps_parent_map.items() if norm not in _ps_node_ids}
     if _missing_ps:
         _placeholder_ps = {"records": [{"Id": pid, "Name": f"[AggregatePermSet] {pid}"} for pid in _missing_ps]}
-        nodes += node_builder.build_permission_sets(_placeholder_ps)
+        for node in node_builder.build_permission_sets(_placeholder_ps):
+            graph.add_or_merge_node(node)
         print(f"[+] Hydrated {len(_missing_ps)} aggregate/system PermissionSet placeholder nodes")
 
     # Safety net: if hydration still missed any profile ids, add placeholders now
-    add_placeholder_profiles_for_users(users, profiles, nodes)
+    add_placeholder_profiles_for_users(users, profiles, graph)
 
     # Groups: always build generic Group nodes so GroupMember edges never dangle
-    nodes += node_builder.build_groups(groups)
+    for node in node_builder.build_groups(groups):
+        graph.add_or_merge_node(node)
 
     public_groups = {"records": [g for g in groups.get("records", []) if g.get("Type") == "Regular"]}
     queues = {"records": [g for g in groups.get("records", []) if g.get("Type") == "Queue"]}
 
-    nodes += node_builder.build_public_groups(public_groups)
-    nodes += node_builder.build_queues(queues)
-    nodes += node_builder.build_connected_apps(connected_apps)
-    nodes += node_builder.build_sobjects(sobjects)
-    nodes += node_builder.build_fields(field_permissions)
+    for node in node_builder.build_public_groups(public_groups):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_queues(queues):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_connected_apps(connected_apps):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_sobjects(sobjects):
+        graph.add_or_merge_node(node)
+    for node in node_builder.build_fields(field_permissions):
+        graph.add_or_merge_node(node)
 
     # NOTE: System permissions are now modeled as edges to the Organization node,
     # not as separate nodes. See edge building section below.
 
     # Permission Set Groups
-    nodes += node_builder.build_permission_set_groups(permission_set_groups)
-
-    # Permissions primitives (enable when ready)
-    # nodes += node_builder.build_object_permissions(obj_perms)
-    # nodes += node_builder.build_field_permissions(field_perms)
+    for node in node_builder.build_permission_set_groups(permission_set_groups):
+        graph.add_or_merge_node(node)
 
     # -----------------------------
-    # Normalize edges
+    # Build edges into graph
     # -----------------------------
     edge_builder = EdgeBuilder()
-    edges = []
 
     # User -> Profile
-    edges += edge_builder.build_profile_assignments(users)
+    for edge in edge_builder.build_profile_assignments(users):
+        graph.add_edge_without_validation(edge)
 
     # Profile -> PermissionSet (for profile-owned permsets)
-    edges += edge_builder.build_profile_permission_sets(permission_sets)
+    for edge in edge_builder.build_profile_permission_sets(permission_sets):
+        graph.add_edge_without_validation(edge)
 
     # User -> PermissionSet (DIRECT assignments only)
-    edges += edge_builder.build_permission_set_assignments(permission_set_assignments, permission_sets)
+    for edge in edge_builder.build_permission_set_assignments(permission_set_assignments, permission_sets):
+        graph.add_edge_without_validation(edge)
 
     # User -> Role / Role hierarchy
-    edges += edge_builder.build_role_assignments(users)
-    edges += edge_builder.build_role_hierarchy(user_roles)
+    for edge in edge_builder.build_role_assignments(users):
+        graph.add_edge_without_validation(edge)
+    for edge in edge_builder.build_role_hierarchy(user_roles):
+        graph.add_edge_without_validation(edge)
 
     # User/Group -> Group
-    edges += edge_builder.build_group_memberships(group_members)
+    for edge in edge_builder.build_group_memberships(group_members):
+        graph.add_edge_without_validation(edge)
 
     # Build SobjectType API name -> SFSObject node ID lookup (shared by queue and CRUD edge builders)
     sobject_lookup = {}
@@ -401,52 +409,42 @@ def main():
             sobject_lookup[api_name] = node_id
 
     # Queue -> Object access (which object types each Queue can own)
-    edges += edge_builder.build_queue_object_access(queue_sobjects, sobject_lookup)
+    for edge in edge_builder.build_queue_object_access(queue_sobjects, sobject_lookup):
+        graph.add_edge_without_validation(edge)
 
     # ConnectedApp -> User (creation tracking)
-    edges += edge_builder.build_connected_app_creators(connected_apps)
+    for edge in edge_builder.build_connected_app_creators(connected_apps):
+        graph.add_edge_without_validation(edge)
 
     # Profile/PermissionSet -> ConnectedApp (authorization grants)
-    edges += edge_builder.build_setup_entity_access(setup_entity_access)
+    for edge in edge_builder.build_setup_entity_access(setup_entity_access):
+        graph.add_edge_without_validation(edge)
 
     # Profile/PermissionSet -> SObject (CRUD permissions)
-    edges += edge_builder.build_object_permissions(object_permissions, sobject_lookup)
-    edges += edge_builder.build_field_permissions(field_permissions)
+    for edge in edge_builder.build_object_permissions(object_permissions, sobject_lookup):
+        graph.add_edge_without_validation(edge)
+    for edge in edge_builder.build_field_permissions(field_permissions):
+        graph.add_edge_without_validation(edge)
 
     # System permission edges (Profile/PermissionSet -> Organization)
     # Each system permission (e.g., ModifyAllData, ViewSetup) becomes an edge to the Organization
-    edges += edge_builder.build_profile_system_permissions(profiles, org_node_id)
-    edges += edge_builder.build_permission_set_system_permissions(permission_sets, org_node_id)
+    for edge in edge_builder.build_profile_system_permissions(profiles, org_node_id):
+        graph.add_edge_without_validation(edge)
+    for edge in edge_builder.build_permission_set_system_permissions(permission_sets, org_node_id):
+        graph.add_edge_without_validation(edge)
 
-    # PermissionSetGroup relationships (your edge builder implementation)
-    edges += edge_builder.build_permission_set_group_assignments(permission_set_group_assignments)
-    edges += edge_builder.build_permission_set_group_components(permission_set_group_components)
-
-    # -----------------------------
-    # Sanity check: detect dangling edges
-    # -----------------------------
-    node_ids = {n["id"].upper() for n in nodes if n.get("id")}
-
-    def _edge_endpoint_id(endpoint):
-        return endpoint.get("value")
-
-    dangling = []
-    for e in edges:
-        s = (_edge_endpoint_id(e["start"]) or "").upper()
-        t = (_edge_endpoint_id(e["end"]) or "").upper()
-        if s not in node_ids or t not in node_ids:
-            dangling.append((e["kind"], s, t))
-
-    if dangling:
-        print(f"[!] Warning: {len(dangling)} dangling edges detected (missing nodes). Showing first 20:")
-        for kind, s, t in dangling[:20]:
-            print(f"    {kind}: {s} -> {t}")
+    # PermissionSetGroup relationships
+    for edge in edge_builder.build_permission_set_group_assignments(permission_set_group_assignments):
+        graph.add_edge_without_validation(edge)
+    for edge in edge_builder.build_permission_set_group_components(permission_set_group_components):
+        graph.add_edge_without_validation(edge)
 
     # -----------------------------
-    # Export graph
+    # Summary, dangling-edge check, and export
     # -----------------------------
-    exporter = Exporter()
-    exporter.export(nodes, edges, output_path)
+    graph.print_summary()
+    graph.check_dangling()
+    graph.export_to_file(output_path, include_metadata=False, indent=2)
     print(f"[+] Graph exported to {output_path}, happy graphing!")
 
     # -----------------------------
