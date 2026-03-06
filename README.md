@@ -42,8 +42,8 @@ I would greatly appreciate your feedback on any performance or visibility issues
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/Khadinxc/SalesforceHound.git
-cd SalesforceHound/salesforce-opengraph
+git clone https://github.com/Khadinxc/sfhound.git
+cd sfhound/sf-opengraph
 pip install -r requirements.txt
 ```
 
