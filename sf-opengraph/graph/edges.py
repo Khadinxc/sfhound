@@ -72,6 +72,9 @@ class EdgeKinds:
     # Queue relationships
     CAN_OWN_OBJECT = "CanOwnObject"
 
+    # Record ownership
+    OWNS_RECORDS_OF_OBJECT = "OwnsRecordsOfObject"
+
     # Creation/ownership
     CREATED_BY = "CreatedBy"
 
@@ -1021,6 +1024,54 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
+    # Source: Salesforce Help "Understanding Sharing" and "User Role Hierarchy"
+    # https://help.salesforce.com/s/articleView?id=sf.security_sharing.htm
+    # https://help.salesforce.com/s/articleView?id=sf.security_roles_overview.htm
+    # An OwnerId field on a record identifies the user responsible for that record.
+    # When an object's OWD is Private or Public Read Only, the role hierarchy grants
+    # managers implicit read (and sometimes edit) access to records owned by subordinates.
+    "OwnsRecordsOfObject": {
+        "General": (
+            "Indicates that a Salesforce user owns at least one record of the specified SObject type. "
+            "Record ownership is significant when the org-wide default (OWD) for the object is Private "
+            "or Public Read Only: roles above the owning user in the role hierarchy can view (and in "
+            "some cases edit) those records via implicit role-based sharing. This edge enables "
+            "BloodHound path traversal to surface indirect data access that flows upward through the "
+            "role hierarchy from record owners to their managers."
+        ),
+        "AbuseInfo": (
+            "When an object's OWD is Private, a user above the owner in the role hierarchy automatically "
+            "gains read access to all records owned by subordinates. An attacker who compromises any "
+            "manager account inherits read (and potentially write) access to every record owned by "
+            "users below them. Combined with InheritsRole edges, this models the full attack surface "
+            "for privilege escalation through record ownership. If a sensitive object has even one "
+            "record owned by a low-privileged user, a manager above that user in the hierarchy gains "
+            "implicit read access without any explicit permission assignment."
+        ),
+        "References": (
+            "MITRE ATT&CK: T1530 - Data from Cloud Storage | "
+            "Salesforce Help - Sharing Model: https://help.salesforce.com/s/articleView?id=sf.security_sharing.htm | "
+            "Salesforce Help - Role Hierarchy: https://help.salesforce.com/s/articleView?id=sf.security_roles_overview.htm"
+        ),
+        "RemediationInfo": (
+            "Audit who owns records of sensitive custom objects and compare against the role hierarchy. "
+            "If a sensitive object uses a Private OWD, ensure all record owners are at the lowest appropriate "
+            "level in the role hierarchy to minimise implicit read access propagation upward. Consider "
+            "using Apex sharing or manual sharing rules to grant access explicitly rather than relying on "
+            "role-hierarchy inheritance. Review and remove unnecessary records owned by high-role users "
+            "who should not be creating data at that level."
+        ),
+        "OPSEC": (
+            "Record access via role hierarchy inheritance is not individually logged per record read — "
+            "it is implicit sharing enforced at query time. Standard audit logs do not record when a "
+            "manager reads a subordinate's owned records via role-based sharing. Event Monitoring (if "
+            "licensed) captures API query events but does not attribute them to role-hierarchy sharing "
+            "specifically. Changing record ownership (OwnerId update) is visible in the record's field "
+            "history if field history tracking is enabled on OwnerId, and in Event Monitoring as a "
+            "field update event."
+        ),
+    },
+
     # Source: Salesforce Help "Connected Apps Overview"
     # https://help.salesforce.com/s/articleView?id=sf.connected_app_overview.htm
     # ConnectedApp.CreatedById records the admin who registered the OAuth application
@@ -1561,6 +1612,48 @@ class EdgeBuilder:
                 )
             )
         
+        return edges
+
+    def build_record_ownership_edges(
+        self,
+        record_owners: list,
+        sobject_lookup: Dict[str, str],
+    ) -> List[Dict[str, Any]]:
+        """
+        Emit OwnsRecordsOfObject edges: SFUser -> SFSObject.
+
+        record_owners: list returned by AssignmentExtractor.extract_record_owners —
+            each entry is {"OwnerId": ..., "SobjectType": ..., "SobjectDurableId": ...}.
+        sobject_lookup: QualifiedApiName -> DurableId (same dict used by CRUD edge builders).
+
+        Deduplicates (owner, object) pairs so only one edge is emitted per user+object
+        combination, regardless of how many records the user owns of that type.
+        """
+        edges: List[Dict[str, Any]] = []
+        seen: Set[tuple] = set()
+        ctx = GROUP_AND_ACCESS_EDGE_CONTEXT.get(EdgeKinds.OWNS_RECORDS_OF_OBJECT)
+
+        for r in record_owners:
+            owner_id = r.get("OwnerId")
+            sobject_type = r.get("SobjectType")
+            # Prefer the consistent DurableId from sobject_lookup so the edge target
+            # always points to the same node ID used by CRUD and FLS edges.
+            sobject_node_id = sobject_lookup.get(sobject_type) or r.get("SobjectDurableId")
+
+            if not owner_id or not sobject_node_id:
+                continue
+
+            key = (_norm_sf_id(owner_id), _norm_sf_id(sobject_node_id))
+            if key in seen:
+                continue
+            seen.add(key)
+
+            props: Dict[str, Any] = {"SobjectType": sobject_type}
+            if ctx:
+                props.update(ctx)
+
+            edges.append(_make_edge(owner_id, sobject_node_id, EdgeKinds.OWNS_RECORDS_OF_OBJECT, props))
+
         return edges
 
     def build_connected_app_creators(

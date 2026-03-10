@@ -290,6 +290,7 @@ def main():
     permission_set_assignments = assignment_extractor.extract_permission_set_assignments()
     group_members = assignment_extractor.extract_group_members()
     permission_set_group_assignments = assignment_extractor.extract_permission_set_group_assignments()
+    record_owners = assignment_extractor.extract_record_owners(sobjects)
 
     # -----------------------------
     # Hydrate missing Profiles (best effort)
@@ -424,6 +425,10 @@ def main():
     for edge in edge_builder.build_object_permissions(object_permissions, sobject_lookup):
         graph.add_edge_without_validation(edge)
     for edge in edge_builder.build_field_permissions(field_permissions):
+        graph.add_edge_without_validation(edge)
+
+    # User -> SObject (record ownership, enables role-hierarchy access path analysis)
+    for edge in edge_builder.build_record_ownership_edges(record_owners, sobject_lookup):
         graph.add_edge_without_validation(edge)
 
     # System permission edges (Profile/PermissionSet -> Organization)
