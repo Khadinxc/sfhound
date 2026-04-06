@@ -480,6 +480,15 @@ RETURN p
 LIMIT 1000
 ```
 
+All users with access to any specific fields:
+```cypher
+MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField)
+WHERE f.name = 'SECRETDATA__C.HIGHLYSENSITIVEFIELD__C'
+  AND u <> f
+RETURN p
+LIMIT 1000
+```
+
 All users with access to any custom fields:
 ```cypher
 MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField)
