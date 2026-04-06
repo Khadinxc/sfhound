@@ -136,3 +136,46 @@ class AssignmentExtractor:
         WHERE PermissionSetGroupId != null
         """
         return self.query(soql)
+
+    def extract_record_owners(self, sobjects_data: dict) -> list:
+        """
+        Query each custom SObject for distinct OwnerId values to map which users own
+        records of which object type. Used to build OwnsRecordsOfObject edges, enabling
+        detection of indirect record access via the role hierarchy.
+
+        Filters to custom objects only (QualifiedApiName ending in '__c'), excluding custom
+        settings and non-queryable objects. Objects without an OwnerId field or inaccessible
+        to the running user are silently skipped.
+
+        Returns a list of {"OwnerId": ..., "SobjectType": ..., "SobjectDurableId": ...} dicts.
+        """
+        results = []
+        for obj in sobjects_data.get("records", []):
+            api_name = obj.get("QualifiedApiName", "")
+            durable_id = obj.get("DurableId") or api_name
+
+            # Limit to custom data objects only
+            if not api_name.endswith("__c"):
+                continue
+            if obj.get("IsCustomSetting"):
+                continue
+            if not obj.get("IsQueryable"):
+                continue
+
+            try:
+                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"
+                batch = self.query(soql)
+                for r in batch.get("records", []):
+                    owner_id = r.get("OwnerId")
+                    if owner_id:
+                        results.append({
+                            "OwnerId": owner_id,
+                            "SobjectType": api_name,
+                            "SobjectDurableId": durable_id,
+                        })
+            except Exception:
+                # Object lacks OwnerId field, has zero records,
+                # or running user lacks read permission — skip silently.
+                pass
+
+        return results
