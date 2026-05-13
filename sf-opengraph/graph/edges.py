@@ -53,45 +53,45 @@ class EdgeKinds:
     """
 
     # Direct identity/assignment
-    ASSIGNED_PROFILE = "AssignedProfile"
-    ASSIGNED_PERMISSION_SET = "AssignedPermissionSet"
-    ASSIGNED_PERMISSION_SET_GROUP = "AssignedPermissionSetGroup"
+    ASSIGNED_PROFILE = "SF_AssignedProfile"
+    ASSIGNED_PERMISSION_SET = "SF_AssignedPermissionSet"
+    ASSIGNED_PERMISSION_SET_GROUP = "SF_AssignedPermissionSetGroup"
 
     # Role relationships
-    HAS_ROLE = "HasRole"
-    INHERITS_ROLE = "InheritsRole"
+    HAS_ROLE = "SF_HasRole"
+    INHERITS_ROLE = "SF_InheritsRole"
 
     # Groups
-    MEMBER_OF_GROUP = "MemberOfGroup"
-    HAS_MEMBER = "HasMember"
-    INCLUDES_PERMISSION_SET = "IncludesPermissionSet"
+    MEMBER_OF_GROUP = "SF_MemberOfGroup"
+    HAS_MEMBER = "SF_HasMember"
+    INCLUDES_PERMISSION_SET = "SF_IncludesPermissionSet"
 
     # Profile-owned PermissionSets (i.e., the PermissionSet record that represents the Profile)
-    HAS_PERMISSION_SET = "HasPermissionSet"
+    HAS_PERMISSION_SET = "SF_HasPermissionSet"
 
     # Queue relationships
-    CAN_OWN_OBJECT = "CanOwnObject"
+    CAN_OWN_OBJECT = "SF_CanOwnObject"
 
     # Record ownership
-    OWNS_RECORDS_OF_OBJECT = "OwnsRecordsOfObject"
+    OWNS_RECORDS_OF_OBJECT = "SF_OwnsRecordsOfObject"
 
     # Creation/ownership
-    CREATED_BY = "CreatedBy"
+    CREATED_BY = "SF_CreatedBy"
 
     # ConnectedApp authorization
-    CAN_AUTHORIZE = "CanAuthorize"
+    CAN_AUTHORIZE = "SF_CanAuthorize"
 
     # SObject CRUD permissions (ObjectPermissions)
-    CAN_CREATE = "CanCreate"
-    CAN_READ = "CanRead"
-    CAN_EDIT = "CanEdit"
-    CAN_DELETE = "CanDelete"
-    CAN_VIEW_ALL = "CanViewAll"          # ViewAllRecords - bypass sharing
-    CAN_MODIFY_ALL = "CanModifyAll"      # ModifyAllRecords - bypass sharing
+    CAN_CREATE = "SF_CanCreate"
+    CAN_READ = "SF_CanRead"
+    CAN_EDIT = "SF_CanEdit"
+    CAN_DELETE = "SF_CanDelete"
+    CAN_VIEW_ALL = "SF_CanViewAll"          # ViewAllRecords - bypass sharing
+    CAN_MODIFY_ALL = "SF_CanModifyAll"      # ModifyAllRecords - bypass sharing
 
     # Field-Level Security (FLS) permissions (FieldPermissions)
-    IS_VISIBLE = "IsVisible"              # Field visible and editable (PermissionsEdit = True)
-    READ_ONLY = "ReadOnly"                # Field visible but read-only (PermissionsRead = True, PermissionsEdit = False)
+    IS_VISIBLE = "SF_IsVisible"              # Field visible and editable (PermissionsEdit = True)
+    READ_ONLY = "SF_ReadOnly"                # Field visible but read-only (PermissionsRead = True, PermissionsEdit = False)
 
 
 # -------------------------
@@ -373,7 +373,7 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Remove ViewAllData from all non-system-administrator profiles and permission sets; document and justify any exception with a named business owner and review date. Treat any human account with ViewAllData as Tier Zero requiring privileged access management (PAM) controls. Prefer object-level CanViewAll for cases where only specific object access is needed."
+            "Remove ViewAllData from all non-system-administrator profiles and permission sets; document and justify any exception with a named business owner and review date. Treat any human account with ViewAllData as Tier Zero requiring privileged access management (PAM) controls. Prefer object-level SF_CanViewAll for cases where only specific object access is needed."
         ),
         "OPSEC": (
             "ViewAllData does not generate per-record read events in standard Salesforce logs. Bulk data extraction via the Bulk API or Workbench is logged in API usage event logs but is indistinguishable from legitimate admin data operations. Event Monitoring with Field Audit Trail, Data Export, or Report event types (additional licence required) is the only mechanism for detecting ViewAllData-based exfiltration in the default org."
@@ -512,7 +512,7 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
 # Object Permission Context
 # -------------------------
 # Contextual descriptions and impact statements for object-level CRUD permissions.
-# These properties are added to CanCreate/CanRead/CanEdit/CanDelete/CanViewAll/CanModifyAll
+# These properties are added to SF_CanCreate/SF_CanRead/SF_CanEdit/SF_CanDelete/SF_CanViewAll/SF_CanModifyAll
 # edges between a Profile/PermissionSet and an SObject node.
 #
 # Sources:
@@ -531,7 +531,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants the ability to view records of this object type, subject to
     # sharing rules, role hierarchy, and OWD settings.
-    "CanRead": {
+    "SF_CanRead": {
         "General": (
             "Grants the ability to view records of this object type. Access is still subject "
             "to record-level sharing controls (OWD, sharing rules, role hierarchy). "
@@ -547,10 +547,10 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Apply a data classification model to all SObjects; restrict CanRead on sensitive objects (PII, financial records, credential stores) to profiles and permission sets with a documented business need. Review object permission grants quarterly via the Permission Set and Profile object permission matrices. Use CanViewAll only when cross-user read access is genuinely required."
+            "Apply a data classification model to all SObjects; restrict SF_CanRead on sensitive objects (PII, financial records, credential stores) to profiles and permission sets with a documented business need. Review object permission grants quarterly via the Permission Set and Profile object permission matrices. Use SF_CanViewAll only when cross-user read access is genuinely required."
         ),
         "OPSEC": (
-            "Object-level CRUD permissions are not logged when a user reads a record in standard audit. Read events appear only with Event Monitoring (Field Audit Trail) which requires an additional licence. Profile and permission set changes that grant CanRead are logged in Setup Audit Trail. Assume any holder of CanRead on a sensitive object can exfiltrate all accessible records silently in default org configurations."
+            "Object-level CRUD permissions are not logged when a user reads a record in standard audit. Read events appear only with Event Monitoring (Field Audit Trail) which requires an additional licence. Profile and permission set changes that grant SF_CanRead are logged in Setup Audit Trail. Assume any holder of SF_CanRead on a sensitive object can exfiltrate all accessible records silently in default org configurations."
         ),
     },
 
@@ -558,7 +558,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants the ability to create new records of this object type.
     # Implicitly requires Read to be useful.
-    "CanCreate": {
+    "SF_CanCreate": {
         "General": (
             "Grants the ability to create new records of this object type. "
             "The user becomes the owner of any records they create, giving them full "
@@ -575,7 +575,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Limit record creation to profiles and permission sets with an operational need. For sensitive objects, consider Apex trigger validation or a custom permission gate to enforce record-creation approval. Monitor for anomalous bulk creation activity via Event Monitoring API Usage events. Remove CanCreate from profiles where no create workflow exists."
+            "Limit record creation to profiles and permission sets with an operational need. For sensitive objects, consider Apex trigger validation or a custom permission gate to enforce record-creation approval. Monitor for anomalous bulk creation activity via Event Monitoring API Usage events. Remove SF_CanCreate from profiles where no create workflow exists."
         ),
         "OPSEC": (
             "Record creation populates the CreatedById and CreatedDate standard fields on the new record but generates no Setup Audit Trail entry. Bulk record creation via the Bulk API is visible in API Usage event logs with Event Monitoring, but individual record creation is invisible in standard logs. Apex triggers attached to the object execute in the creator's context upon creation and can be abused as side-channels."
@@ -586,7 +586,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants the ability to modify existing records of this object type,
     # subject to sharing rules. Requires Read.
-    "CanEdit": {
+    "SF_CanEdit": {
         "General": (
             "Grants the ability to edit existing records of this object type that are accessible "
             "to the user (per sharing rules). Requires Read permission on the object. "
@@ -603,7 +603,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Restrict CanEdit on sensitive objects to users with a clear business justification. Enable Field History Tracking on critical fields for important objects. Audit profile and permission set changes that grant CanEdit on sensitive objects via Setup Audit Trail. For compliance-sensitive records, implement record-locking mechanisms to prevent modification after a defined workflow stage."
+            "Restrict SF_CanEdit on sensitive objects to users with a clear business justification. Enable Field History Tracking on critical fields for important objects. Audit profile and permission set changes that grant SF_CanEdit on sensitive objects via Setup Audit Trail. For compliance-sensitive records, implement record-locking mechanisms to prevent modification after a defined workflow stage."
         ),
         "OPSEC": (
             "Individual record edits are not logged in Setup Audit Trail; only the standard LastModifiedBy and SystemModstamp fields update on the record. Field History Tracking (if configured per-object) logs field-level changes but does not capture all fields by default. Large-scale edits via the Bulk API Update operation are visible in Event Monitoring API usage logs but individual record edits are forensically silent."
@@ -614,7 +614,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants the ability to delete records of this object type that the user
     # can access. Deleted records go to the Recycle Bin (15 days).
-    "CanDelete": {
+    "SF_CanDelete": {
         "General": (
             "Grants the ability to delete records of this object type that the user can access. "
             "Deleted records are moved to the Recycle Bin for 15 days before permanent removal. "
@@ -623,7 +623,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         "AbuseInfo": (
             "Enables targeted or bulk data destruction. Even with Recycle Bin recovery, mass deletion "
             "causes service disruption and data-integrity incidents. For objects used in financial or "
-            "compliance workflows, deletion can undermine audit trails. Combined with CanModifyAll, "
+            "compliance workflows, deletion can undermine audit trails. Combined with SF_CanModifyAll, "
             "a holder can delete any record org-wide bypassing ownership constraints."
         ),
         "References": (
@@ -631,7 +631,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Apply CanDelete conservatively; require explicit justification for delete permissions on sensitive or compliance-relevant objects. Set up automation to alert on bulk deletions (e.g., via Platform Events or Flows monitoring RecordDeleted triggers). For financial and audit objects, prefer a soft-delete pattern using a custom IsArchived field rather than hard deletes. Review holders quarterly."
+            "Apply SF_CanDelete conservatively; require explicit justification for delete permissions on sensitive or compliance-relevant objects. Set up automation to alert on bulk deletions (e.g., via Platform Events or Flows monitoring RecordDeleted triggers). For financial and audit objects, prefer a soft-delete pattern using a custom IsArchived field rather than hard deletes. Review holders quarterly."
         ),
         "OPSEC": (
             "Record deletions move records to the Recycle Bin and update the LastModifiedBy and SystemModstamp fields on the Recycle Bin item. There is no Setup Audit Trail entry for data deletions. Event Monitoring Bulk API Delete events can detect bulk deletions but individual record deletes are invisible in standard logs. Recycle Bin items are recoverable for 15 days and then permanently removed unless restored."
@@ -642,7 +642,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants access to ALL records of this object type, completely bypassing
     # sharing rules, role hierarchy, and OWD settings.
-    "CanViewAll": {
+    "SF_CanViewAll": {
         "General": (
             "Grants read access to ALL records of this object type, regardless of record ownership, "
             "sharing rules, role hierarchy, or Organisation-Wide Default (OWD) settings. "
@@ -659,10 +659,10 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Treat CanViewAll as equivalent to a per-object ViewAllData. Restrict to integration and service accounts with a documented operational need; remove from all human user profiles. Track any profile or permission set modification that adds this flag via Setup Audit Trail monitoring. Conduct quarterly access reviews with designated data owners for each sensitive object."
+            "Treat SF_CanViewAll as equivalent to a per-object ViewAllData. Restrict to integration and service accounts with a documented operational need; remove from all human user profiles. Track any profile or permission set modification that adds this flag via Setup Audit Trail monitoring. Conduct quarterly access reviews with designated data owners for each sensitive object."
         ),
         "OPSEC": (
-            "CanViewAll does not generate per-record read events in standard logs. Bulk data extraction using this permission is indistinguishable from normal administrative activity in default logging. Event Monitoring Data Export and Report event types (additional licence required) may capture large-scale reads. Field-level visibility remains constrained by FLS settings regardless of CanViewAll."
+            "SF_CanViewAll does not generate per-record read events in standard logs. Bulk data extraction using this permission is indistinguishable from normal administrative activity in default logging. Event Monitoring Data Export and Report event types (additional licence required) may capture large-scale reads. Field-level visibility remains constrained by FLS settings regardless of SF_CanViewAll."
         ),
     },
 
@@ -670,7 +670,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants read, edit, delete, transfer, and approve access to ALL records
     # of this object type, completely bypassing sharing and ownership controls.
-    "CanModifyAll": {
+    "SF_CanModifyAll": {
         "General": (
             "Grants read, edit, delete, transfer ownership, and approval override on ALL records "
             "of this object type, regardless of record ownership, sharing rules, or OWD settings. "
@@ -687,10 +687,10 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Treat CanModifyAll as Tier Zero for any sensitive object. Restrict to break-glass integration accounts only and document all exceptions with a named business owner. Remove from all human user profiles and non-critical permission sets. Regularly audit CanModifyAll grants on the User, Contact, Account, and any custom PII, financial, or credential-store objects."
+            "Treat SF_CanModifyAll as Tier Zero for any sensitive object. Restrict to break-glass integration accounts only and document all exceptions with a named business owner. Remove from all human user profiles and non-critical permission sets. Regularly audit SF_CanModifyAll grants on the User, Contact, Account, and any custom PII, financial, or credential-store objects."
         ),
         "OPSEC": (
-            "CanModifyAll-based edits appear in the record's LastModifiedBy and SystemModstamp fields but not in Setup Audit Trail. Bulk operations via the Bulk API are visible in API Usage event logs with Event Monitoring. Ownership transfer and approval override operations enabled by this permission leave no distinct audit trail entry beyond the record modification itself, making attribution during IR challenging."
+            "SF_CanModifyAll-based edits appear in the record's LastModifiedBy and SystemModstamp fields but not in Setup Audit Trail. Bulk operations via the Bulk API are visible in API Usage event logs with Event Monitoring. Ownership transfer and approval override operations enabled by this permission leave no distinct audit trail entry beyond the record modification itself, making attribution during IR challenging."
         ),
     },
 }
@@ -723,7 +723,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # Every Salesforce user is assigned exactly one Profile. The Profile defines
     # the user's baseline permissions: object access, system permissions, page
     # layouts, record types, field-level security, login hours, and IP restrictions.
-    "AssignedProfile": {
+    "SF_AssignedProfile": {
         "General": (
             "Every Salesforce user is assigned exactly one Profile, which defines their baseline "
             "access: object-level CRUD permissions, system permissions, field-level security, "
@@ -753,7 +753,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # A Permission Set is an additive set of permissions assigned directly to a
     # user on top of their Profile. A user can hold multiple Permission Sets.
     # They grant object, field, system, and app permissions additionally.
-    "AssignedPermissionSet": {
+    "SF_AssignedPermissionSet": {
         "General": (
             "A Permission Set grants additional permissions on top of a user's Profile. "
             "Users can hold multiple Permission Sets simultaneously. They can grant "
@@ -784,7 +784,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # A Permission Set Group bundles multiple Permission Sets into a single
     # assignable unit. When assigned to a user, the user receives all permissions
     # from all member Permission Sets simultaneously.
-    "AssignedPermissionSetGroup": {
+    "SF_AssignedPermissionSetGroup": {
         "General": (
             "A Permission Set Group bundles multiple Permission Sets into a single assignable unit. "
             "When a user is assigned a Permission Set Group, they receive the combined permissions "
@@ -812,7 +812,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # https://help.salesforce.com/s/articleView?id=sf.perm_set_groups.htm
     # PermissionSetGroupComponent records define which Permission Sets are bundled
     # inside a Permission Set Group. This edge represents that containment.
-    "IncludesPermissionSet": {
+    "SF_IncludesPermissionSet": {
         "General": (
             "Indicates that this Permission Set is a member of the Permission Set Group. "
             "Users assigned the Group automatically receive all permissions from this "
@@ -820,7 +820,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
         "AbuseInfo": (
             "Containment within a Group is a key step in the transitive permission chain. "
-            "Auditing a Group assignment requires inspecting all IncludesPermissionSet edges "
+            "Auditing a Group assignment requires inspecting all SF_IncludesPermissionSet edges "
             "to understand the full effective permission scope. A single high-risk Permission Set "
             "embedded in an otherwise benign Group elevates every user holding that Group assignment."
         ),
@@ -841,7 +841,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # Salesforce internally represents every Profile as a PermissionSet record
     # (IsOwnedByProfile=true). This edge links the Profile node to its backing
     # PermissionSet, enabling permission queries through a unified interface.
-    "HasPermissionSet": {
+    "SF_HasPermissionSet": {
         "General": (
             "Links a Profile to its internal PermissionSet representation "
             "(IsOwnedByProfile=true). Salesforce models Profiles as a specialised "
@@ -871,7 +871,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # Every Salesforce user can be assigned to exactly one UserRole. The role
     # determines record visibility: users in parent roles can see records owned
     # by users in all subordinate roles below them in the hierarchy.
-    "HasRole": {
+    "SF_HasRole": {
         "General": (
             "Assigns a user to a role in the Salesforce role hierarchy. A user's role determines "
             "which records they can see: users in parent roles automatically gain read access to "
@@ -902,7 +902,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # The ParentRoleId field on a UserRole record establishes the upward hierarchy.
     # Users in parent roles inherit visibility over records owned by child-role users.
     # This creates a transitive privilege escalation path up the org chart.
-    "InheritsRole": {
+    "SF_InheritsRole": {
         "General": (
             "Represents the parent-child relationship between two roles in the Salesforce role "
             "hierarchy. A child role's users have their records visible to users in the parent role. "
@@ -937,7 +937,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # A GroupMember record links a User or Group (UserOrGroupId) to a Public Group or
     # Queue (GroupId). Group membership drives record sharing via sharing rules and
     # manual shares. Nested groups propagate access transitively through the hierarchy.
-    "MemberOfGroup": {
+    "SF_MemberOfGroup": {
         "General": (
             "Records that a user or nested group is a member of a Salesforce Public Group or Queue. "
             "Membership drives record sharing: any sharing rule that grants a group access to records "
@@ -965,17 +965,17 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
 
     # Source: Salesforce Help "Create and Manage Groups"
     # https://help.salesforce.com/s/articleView?id=sf.admin_groups.htm
-    # HasMember is the inverse of MemberOfGroup: it represents the Group -> Member
+    # SF_HasMember is the inverse of SF_MemberOfGroup: it represents the Group -> Member
     # direction, mirroring the same GroupMember record for UI traversal (e.g., listing
     # all members of a given group in BloodHound graph queries).
-    "HasMember": {
+    "SF_HasMember": {
         "General": (
             "Represents a Public Group or Queue containing a user or nested group as a member. "
-            "This is the inverse direction of MemberOfGroup and mirrors the same GroupMember record "
+            "This is the inverse direction of SF_MemberOfGroup and mirrors the same GroupMember record "
             "from the Group's perspective, enabling graph traversal from group outward to its members."
         ),
         "AbuseInfo": (
-            "Querying inbound HasMember edges on a high-privilege group reveals every identity that "
+            "Querying inbound SF_HasMember edges on a high-privilege group reveals every identity that "
             "inherits its sharing access. An attacker enumerating group membership can identify "
             "over-provisioned groups and target weaker member accounts to gain equivalent access. "
             "Groups containing other groups (nested) create a fan-out risk where a single insertion "
@@ -989,7 +989,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "Audit the membership roster of all security-relevant groups, particularly those referenced in record sharing rules. Review groups with the broadest sharing impact first. Restrict group administration to a dedicated operations team and require a documented justification for membership changes."
         ),
         "OPSEC": (
-            "This is the inverse direction of the MemberOfGroup edge, representing the same GroupMember record viewed from the Group's perspective. Monitoring recommendations are identical to MemberOfGroup: Setup Audit Trail records all group membership changes. Enumerating group membership via direct SOQL queries leaves no audit trail entry, enabling silent reconnaissance of group scope."
+            "This is the inverse direction of the SF_MemberOfGroup edge, representing the same GroupMember record viewed from the Group's perspective. Monitoring recommendations are identical to SF_MemberOfGroup: Setup Audit Trail records all group membership changes. Enumerating group membership via direct SOQL queries leaves no audit trail entry, enabling silent reconnaissance of group scope."
         ),
     },
 
@@ -998,7 +998,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # A QueueSobject record defines which SObject types a Queue can own. When a record
     # is assigned to a Queue, all Queue members can read and update it. This is a form
     # of implicit sharing that bypasses standard org-wide defaults for affected objects.
-    "CanOwnObject": {
+    "SF_CanOwnObject": {
         "General": (
             "Indicates that a Queue is configured to own records of a specific SObject type. "
             "When a record of that type is assigned to the Queue, every Queue member automatically "
@@ -1030,7 +1030,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # An OwnerId field on a record identifies the user responsible for that record.
     # When an object's OWD is Private or Public Read Only, the role hierarchy grants
     # managers implicit read (and sometimes edit) access to records owned by subordinates.
-    "OwnsRecordsOfObject": {
+    "SF_OwnsRecordsOfObject": {
         "General": (
             "Indicates that a Salesforce user owns at least one record of the specified SObject type. "
             "Record ownership is significant when the org-wide default (OWD) for the object is Private "
@@ -1043,7 +1043,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "When an object's OWD is Private, a user above the owner in the role hierarchy automatically "
             "gains read access to all records owned by subordinates. An attacker who compromises any "
             "manager account inherits read (and potentially write) access to every record owned by "
-            "users below them. Combined with InheritsRole edges, this models the full attack surface "
+            "users below them. Combined with SF_InheritsRole edges, this models the full attack surface "
             "for privilege escalation through record ownership. If a sensitive object has even one "
             "record owned by a low-privileged user, a manager above that user in the hierarchy gains "
             "implicit read access without any explicit permission assignment."
@@ -1077,7 +1077,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # ConnectedApp.CreatedById records the admin who registered the OAuth application
     # in the org. This is important for auditing app provenance and identifying apps
     # created under compromised or over-privileged admin accounts.
-    "CreatedBy": {
+    "SF_CreatedBy": {
         "General": (
             "Links a Connected App to the Salesforce user who created it. This edge captures the "
             "administrative provenance of an OAuth application, recording which admin registered "
@@ -1086,7 +1086,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
         "AbuseInfo": (
             "A Connected App created by a compromised admin may have been configured with overly "
-            "broad OAuth scopes or relaxed IP restrictions intentionally. Tracing CreatedBy edges "
+            "broad OAuth scopes or relaxed IP restrictions intentionally. Tracing SF_CreatedBy edges "
             "allows investigators to correlate suspicious app creation with known account compromise "
             "windows. Attackers with admin access (ModifyAllData, CustomizeApplication) can register "
             "rogue OAuth apps to establish persistent API access that survives password resets."
@@ -1108,7 +1108,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
     # SetupEntityAccess records grant a Profile or PermissionSet the ability to authorize
     # (OAuth-login to) a specific ConnectedApplication. Without this access, users on the
     # profile cannot complete the OAuth flow for the app, regardless of app-level policies.
-    "CanAuthorize": {
+    "SF_CanAuthorize": {
         "General": (
             "Grants a Profile or PermissionSet the right to authorize (OAuth-authenticate to) a "
             "specific Connected App. Users assigned to a Profile or PermissionSet with this access "
@@ -1116,31 +1116,31 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "scoped to whatever permissions the app requests."
         ),
         "AbuseInfo": (
-            "CanAuthorize edges identify which user populations can obtain OAuth tokens for each "
+            "SF_CanAuthorize edges identify which user populations can obtain OAuth tokens for each "
             "Connected App. Apps with Full Access (full) or API-only scopes represent high-value "
             "targets: an attacker who compromises any user in an authorized Profile gains API-level "
             "org access via the app's token. Broad profiles (e.g., System Administrator) with "
-            "CanAuthorize edges to powerful apps are critical attack-path nodes."
+            "SF_CanAuthorize edges to powerful apps are critical attack-path nodes."
         ),
         "References": (
             "MITRE ATT&CK: T1550.001 - Use Alternate Authentication Material: Application Access Token | "
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.connected_app_manage.htm"
         ),
         "RemediationInfo": (
-            "Apply least-privilege to SetupEntityAccess — only profiles and permission sets with a documented business need should be able to authorise each Connected App. Remove CanAuthorize access from broad profiles (e.g., Standard User) for apps with Full Access (full) or API-only OAuth scopes. Audit connected app authorisation policies annually and revoke orphaned access grants."
+            "Apply least-privilege to SetupEntityAccess — only profiles and permission sets with a documented business need should be able to authorise each Connected App. Remove SF_CanAuthorize access from broad profiles (e.g., Standard User) for apps with Full Access (full) or API-only OAuth scopes. Audit connected app authorisation policies annually and revoke orphaned access grants."
         ),
         "OPSEC": (
-            "SetupEntityAccess changes are logged in Setup Audit Trail. Individual OAuth authorisation flows appear in LoginHistory as OAuthToken login events, providing visibility at the point of token issuance. Token refresh events are not separately logged in standard audit. Tokens obtained via CanAuthorize remain valid until the session timeout or explicit revocation, even if the CanAuthorize permission is subsequently removed from the profile or permission set."
+            "SetupEntityAccess changes are logged in Setup Audit Trail. Individual OAuth authorisation flows appear in LoginHistory as OAuthToken login events, providing visibility at the point of token issuance. Token refresh events are not separately logged in standard audit. Tokens obtained via SF_CanAuthorize remain valid until the session timeout or explicit revocation, even if the SF_CanAuthorize permission is subsequently removed from the profile or permission set."
         ),
     },
 
     # Source: Salesforce Help "Field-Level Security"
     # https://help.salesforce.com/s/articleView?id=sf.admin_fls.htm
     # FieldPermissions.PermissionsEdit=true means the field is both visible and editable.
-    # The IsVisible edge type captures full read+write field access granted through a
+    # The SF_IsVisible edge type captures full read+write field access granted through a
     # Profile or PermissionSet. FLS is evaluated in addition to (not instead of) CRUD:
-    # a user needs both object-level CanRead/CanEdit AND field-level IsVisible to read/write a field.
-    "IsVisible": {
+    # a user needs both object-level SF_CanRead/SF_CanEdit AND field-level SF_IsVisible to read/write a field.
+    "SF_IsVisible": {
         "General": (
             "Grants a Profile or PermissionSet read and write access to a specific field on an "
             "SObject (FieldPermissions.PermissionsEdit=true). Users with this edge can both see "
@@ -1149,11 +1149,11 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "object-level permissions."
         ),
         "AbuseInfo": (
-            "IsVisible edges on sensitive fields (e.g., SSN__c, SalaryData__c, BankAccount__c, "
+            "SF_IsVisible edges on sensitive fields (e.g., SSN__c, SalaryData__c, BankAccount__c, "
             "custom PII fields) directly expose confidential data. If a Profile or PermissionSet has "
-            "IsVisible on a high-value field, every user on that Profile can read and overwrite that "
+            "SF_IsVisible on a high-value field, every user on that Profile can read and overwrite that "
             "field. Overly broad FLS is one of the most common data-exposure findings in Salesforce "
-            "orgs. An attacker with ManageProfilesPermissionsets can add IsVisible access to harvest "
+            "orgs. An attacker with ManageProfilesPermissionsets can add SF_IsVisible access to harvest "
             "sensitive fields across the entire user base."
         ),
         "References": (
@@ -1161,31 +1161,31 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_fls.htm"
         ),
         "RemediationInfo": (
-            "Configure Field-Level Security in alignment with data classification policy; restrict IsVisible (edit) access on sensitive fields — such as PII, salary, financial, and credential fields — to named permission sets only. Audit FLS configuration via the Field Accessibility tool or SOQL on FieldPermissions. Remove IsVisible from standard and broadly-assigned profiles for all classified fields."
+            "Configure Field-Level Security in alignment with data classification policy; restrict SF_IsVisible (edit) access on sensitive fields — such as PII, salary, financial, and credential fields — to named permission sets only. Audit FLS configuration via the Field Accessibility tool or SOQL on FieldPermissions. Remove SF_IsVisible from standard and broadly-assigned profiles for all classified fields."
         ),
         "OPSEC": (
-            "FLS permission changes are logged in Setup Audit Trail as profile or permission set metadata updates. Actual field reads and writes (exercising IsVisible access) are not logged in standard audit. Event Monitoring with Field Audit Trail (additional licence required) is needed to capture field-level access events. UI page-layout field hiding does not restrict API access — FLS is the only platform-enforced control and must be relied upon as the definitive access boundary."
+            "FLS permission changes are logged in Setup Audit Trail as profile or permission set metadata updates. Actual field reads and writes (exercising SF_IsVisible access) are not logged in standard audit. Event Monitoring with Field Audit Trail (additional licence required) is needed to capture field-level access events. UI page-layout field hiding does not restrict API access — FLS is the only platform-enforced control and must be relied upon as the definitive access boundary."
         ),
     },
 
     # Source: Salesforce Help "Field-Level Security"
     # https://help.salesforce.com/s/articleView?id=sf.admin_fls.htm
     # FieldPermissions where PermissionsEdit=false but PermissionsRead=true creates a
-    # read-only field access grant. The ReadOnly edge captures this constrained FLS:
+    # read-only field access grant. The SF_ReadOnly edge captures this constrained FLS:
     # the user can see the field value but cannot modify it.
-    "ReadOnly": {
+    "SF_ReadOnly": {
         "General": (
             "Grants a Profile or PermissionSet read-only access to a specific field on an SObject "
             "(FieldPermissions.PermissionsRead=true, PermissionsEdit=false). Users with this edge "
             "can view the field value but cannot modify it, subject to object-level read access also "
-            "being present. ReadOnly FLS is commonly used for audit fields, computed values, and "
+            "being present. SF_ReadOnly FLS is commonly used for audit fields, computed values, and "
             "sensitive fields that must be visible but protected from modification."
         ),
         "AbuseInfo": (
-            "ReadOnly edges on sensitive fields still expose confidential data to every user on the "
+            "SF_ReadOnly edges on sensitive fields still expose confidential data to every user on the "
             "relevant Profile or PermissionSet. Read-only access to fields like SSN, salary, or "
             "financial data is sufficient for data exfiltration even without edit capability. "
-            "Overly permissive ReadOnly FLS is a frequent finding in orgs that rely on UI restrictions "
+            "Overly permissive SF_ReadOnly FLS is a frequent finding in orgs that rely on UI restrictions "
             "rather than true field-level security, since API access (via tools or connected apps) "
             "bypasses page-layout field hiding and only respects FLS."
         ),
@@ -1194,10 +1194,10 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_fls.htm"
         ),
         "RemediationInfo": (
-            "Treat ReadOnly FLS on sensitive fields as a data-exposure risk equivalent to full read access and apply the same access restrictions. Audit FieldPermissions records for classified fields quarterly. Prefer explicit denial (no permission configured) over ReadOnly grants for fields containing PII, financial data, or credentials on standard user profiles."
+            "Treat SF_ReadOnly FLS on sensitive fields as a data-exposure risk equivalent to full read access and apply the same access restrictions. Audit FieldPermissions records for classified fields quarterly. Prefer explicit denial (no permission configured) over SF_ReadOnly grants for fields containing PII, financial data, or credentials on standard user profiles."
         ),
         "OPSEC": (
-            "FLS ReadOnly permission changes are logged in Setup Audit Trail as profile or permission set metadata updates. Field reads exercising ReadOnly FLS leave no per-record access log in standard audit. API access via tools such as Salesforce Inspector, Workbench, or custom integrations bypasses all page-layout restrictions and respects only FLS, meaning ReadOnly-protected sensitive fields are fully readable to any user with API access and this grant."
+            "FLS SF_ReadOnly permission changes are logged in Setup Audit Trail as profile or permission set metadata updates. Field reads exercising SF_ReadOnly FLS leave no per-record access log in standard audit. API access via tools such as Salesforce Inspector, Workbench, or custom integrations bypasses all page-layout restrictions and respects only FLS, meaning SF_ReadOnly-protected sensitive fields are fully readable to any user with API access and this grant."
         ),
     },
 }
@@ -1247,8 +1247,8 @@ class EdgeBuilder:
         IMPORTANT:
         Salesforce exposes the Profile "permission set" (IsOwnedByProfile=true)
         through PermissionSetAssignment as well. Those should NOT be modeled as
-        AssignedPermissionSet from User -> PermissionSet, because the user
-        inherits them via AssignedProfile -> Profile.
+        SF_AssignedPermissionSet from User -> PermissionSet, because the user
+        inherits them via SF_AssignedProfile -> Profile.
 
         So:
         - Skip PermissionSetIds that are profile-owned
@@ -1564,7 +1564,7 @@ class EdgeBuilder:
         """
         Build edges showing which object types each Queue can own.
         
-        Edge: Queue -[CanOwnObject]-> SFSObject
+        Edge: Queue -[SF_CanOwnObject]-> SFSObject
         
         Critical for privilege escalation: Queue members can access all records
         owned by the Queue for the specified object types.
@@ -1620,7 +1620,7 @@ class EdgeBuilder:
         sobject_lookup: Dict[str, str],
     ) -> List[Dict[str, Any]]:
         """
-        Emit OwnsRecordsOfObject edges: SFUser -> SFSObject.
+        Emit SF_OwnsRecordsOfObject edges: SFUser -> SFSObject.
 
         record_owners: list returned by AssignmentExtractor.extract_record_owners —
             each entry is {"OwnerId": ..., "SobjectType": ..., "SobjectDurableId": ...}.
@@ -1660,7 +1660,7 @@ class EdgeBuilder:
         self, connected_apps: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Build CreatedBy edges from ConnectedApplication -> User.
+        Build SF_CreatedBy edges from ConnectedApplication -> User.
         
         Shows which admin created each OAuth app, useful for:
         - Auditing app creation timeline
@@ -1700,7 +1700,7 @@ class EdgeBuilder:
         self, setup_entity_access: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Build CanAuthorize edges from Profile/PermissionSet -> ConnectedApplication.
+        Build SF_CanAuthorize edges from Profile/PermissionSet -> ConnectedApplication.
         
         SetupEntityAccess grants Profiles/PermissionSets the ability to authorize apps.
         Users in these Profiles/PermSets can OAuth login to the ConnectedApp.
@@ -1762,12 +1762,12 @@ class EdgeBuilder:
         - SobjectType: Object API name (string like "Account", not ID)
         
         Creates 6 edge types based on permission flags:
-        - CanCreate: Create new records
-        - CanRead: Read records (respecting sharing)
-        - CanEdit: Edit records (respecting sharing)
-        - CanDelete: Delete records (respecting sharing)
-        - CanViewAll: View ALL records (bypass sharing rules)
-        - CanModifyAll: Edit/Delete ALL records (bypass sharing rules)
+        - SF_CanCreate: Create new records
+        - SF_CanRead: Read records (respecting sharing)
+        - SF_CanEdit: Edit records (respecting sharing)
+        - SF_CanDelete: Delete records (respecting sharing)
+        - SF_CanViewAll: View ALL records (bypass sharing rules)
+        - SF_CanModifyAll: Edit/Delete ALL records (bypass sharing rules)
         
         Security notes:
         - ViewAll/ModifyAll are super-user permissions (bypass sharing)
@@ -1838,8 +1838,8 @@ class EdgeBuilder:
         - Field: Full field API name (e.g., "SecretData__c.HighlySensitiveField__c")
         
         Creates 2 edge types based on permission flags:
-        - IsVisible: Field is visible AND editable (PermissionsEdit = True)
-        - ReadOnly: Field is visible but read-only (PermissionsRead = True, PermissionsEdit = False)
+        - SF_IsVisible: Field is visible AND editable (PermissionsEdit = True)
+        - SF_ReadOnly: Field is visible but read-only (PermissionsRead = True, PermissionsEdit = False)
         
         Security notes:
         - Field-level security is independent of object-level CRUD
@@ -1850,7 +1850,7 @@ class EdgeBuilder:
         Edge modeling:
         - Source: Profile or PermissionSet (ParentId)
         - Target: SFField node (Field API name as node ID)
-        - Edge type: IsVisible (edit)  or ReadOnly (read-only)
+        - Edge type: SF_IsVisible (edit)  or SF_ReadOnly (read-only)
         """
         edges = []
 
@@ -1874,7 +1874,7 @@ class EdgeBuilder:
             perm_read = perm.get("PermissionsRead", False)
 
             if perm_edit:
-                # Edit permission implies read+write (IsVisible edge)
+                # Edit permission implies read+write (SF_IsVisible edge)
                 props = base_props.copy()
                 props["PermissionType"] = "PermissionsEdit"
                 # Source: GROUP_AND_ACCESS_EDGE_CONTEXT dict defined in this module
@@ -1890,7 +1890,7 @@ class EdgeBuilder:
                     )
                 )
             elif perm_read:
-                # Read-only permission (ReadOnly edge)
+                # Read-only permission (SF_ReadOnly edge)
                 props = base_props.copy()
                 props["PermissionType"] = "PermissionsRead"
                 # Source: GROUP_AND_ACCESS_EDGE_CONTEXT dict defined in this module
