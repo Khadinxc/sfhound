@@ -114,16 +114,16 @@ class EdgeKinds:
 
 SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # Tier Zero
-    # Source: Salesforce Help "User Permissions" - ModifyAllData permission
+    # Source: Salesforce Help "User Permissions" - SF_ModifyAllData permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows reading, editing, creating, deleting, approving, and transferring ALL
     # records in the org, completely bypassing record-level and field-level security.
-    "ModifyAllData": {
+    "SF_ModifyAllData": {
         "General": (
             "Grants read, create, edit, delete, approve, and transfer access to every record "
             "in the organisation, regardless of record ownership, sharing rules, or object-level "
             "permissions. When enabled as a system permission it implicitly grants Modify All Records "
-            "and View All Records on every object in the org. Disabling ModifyAllData does NOT "
+            "and View All Records on every object in the org. Disabling SF_ModifyAllData does NOT "
             "automatically remove those per-object grants — they must be cleared manually. "
             "Note: this permission does NOT override field-level security; users must still hold "
             "individual field permissions or the View All Fields object permission to access "
@@ -146,16 +146,16 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Restrict to break-glass System Administrator accounts only. Remove from all functional profiles and permission sets. Implement a quarterly formal access review; consider time-limited permission sets for break-glass activation. Audit current holders via SOQL: SELECT AssigneeId FROM PermissionSetAssignment WHERE PermissionSet.PermissionsModifyAllData = true."
         ),
         "OPSEC": (
-            "ModifyAllData use is not individually logged per record in standard audit. Setup Audit Trail records profile/permset changes that grant or remove this permission, not the data operations performed under it. Bulk API operations are visible in Event Monitoring API usage logs if licensed, but individual record reads and writes appear as normal user activity. Assume any operation performed under this permission is forensically silent in default org configurations."
+            "SF_ModifyAllData use is not individually logged per record in standard audit. Setup Audit Trail records profile/permset changes that grant or remove this permission, not the data operations performed under it. Bulk API operations are visible in Event Monitoring API usage logs if licensed, but individual record reads and writes appear as normal user activity. Assume any operation performed under this permission is forensically silent in default org configurations."
         ),
     },
 
     # Tier Zero
-    # Source: Salesforce Help "User Permissions" - ManageUsers permission
+    # Source: Salesforce Help "User Permissions" - SF_ManageUsers permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows creating, editing, deactivating, unlocking, and resetting passwords for
     # all user accounts, including System Administrator profiles.
-    "ManageUsers": {
+    "SF_ManageUsers": {
         "General": (
             "Allows creating new user accounts, editing existing profiles and roles, resetting "
             "passwords, unlocking accounts, and deactivating users across the entire organisation, "
@@ -182,17 +182,17 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # Source: Salesforce Help "User Permissions" - ManageProfilesPermissionsets permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows creating, editing, and deleting profiles and permission sets, including
-    # assigning dangerous system permissions such as ModifyAllData to any principal.
-    "ManageProfilesPermissionsets": {
+    # assigning dangerous system permissions such as SF_ModifyAllData to any principal.
+    "SF_ManageProfilesPermissionsets": {
         "General": (
             "Allows creating, editing, cloning, and deleting profiles and permission sets. "
-            "Includes the ability to grant any system permission - such as ModifyAllData or "
-            "ManageUsers - to any profile or permission set in the organisation."
+            "Includes the ability to grant any system permission - such as SF_ModifyAllData or "
+            "SF_ManageUsers - to any profile or permission set in the organisation."
         ),
         "AbuseInfo": (
             "Indirect privilege escalation to full org control. A holder can edit their own profile "
-            "or permission set to add ModifyAllData, effectively granting themselves superuser access. "
-            "Can also silently elevate other accounts. Treat as equivalent to ModifyAllData in risk."
+            "or permission set to add SF_ModifyAllData, effectively granting themselves superuser access. "
+            "Can also silently elevate other accounts. Treat as equivalent to SF_ModifyAllData in risk."
         ),
         "References": (
             "MITRE ATT&CK: T1078 - Valid Accounts / T1548 - Abuse Elevation Control Mechanism | "
@@ -209,11 +209,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     # Tier Zero
     # Source: Salesforce Apex Developer Guide - "Apex Security and Sharing"
     # https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_chapter.htm
-    # Source: Salesforce Help "User Permissions" - AuthorApex permission
+    # Source: Salesforce Help "User Permissions" - SF_AuthorApex permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows writing, saving, compiling, and executing Apex classes, triggers,
     # and anonymous Apex code. Apex runs server-side and can use 'without sharing'.
-    "AuthorApex": {
+    "SF_AuthorApex": {
         "General": (
             "Allows writing, compiling, and deploying Apex classes, triggers, and test code. "
             "Also enables execution of anonymous Apex via the Developer Console or Tooling API. "
@@ -239,11 +239,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     },
 
     # Tier Zero
-    # Source: Salesforce Help "User Permissions" - CustomizeApplication permission
+    # Source: Salesforce Help "User Permissions" - SF_CustomizeApplication permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows modifying the application structure: custom objects, fields, workflow rules,
     # process builder flows, validation rules, sharing rules, and security settings.
-    "CustomizeApplication": {
+    "SF_CustomizeApplication": {
         "General": (
             "Allows creating and modifying custom objects, fields, page layouts, workflow rules, "
             "process automations, validation rules, sharing rules, and other application metadata. "
@@ -268,11 +268,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
     },
 
     # Tier Zero
-    # Source: Salesforce Help "User Permissions" - ManageSharing permission
+    # Source: Salesforce Help "User Permissions" - SF_ManageSharing permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows creating and modifying sharing rules, manual shares, and
     # organisation-wide default (OWD) sharing settings for all objects.
-    "ManageSharing": {
+    "SF_ManageSharing": {
         "General": (
             "Allows creating, editing, and deleting sharing rules for all objects, as well as "
             "performing manual shares on any record. Also enables modification of "
@@ -296,11 +296,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - ViewSetup permission
+    # Source: Salesforce Help "User Permissions" - SF_ViewSetup permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows read-only access to Setup pages, including user lists, profiles,
     # permission sets, connected apps, and security configurations.
-    "ViewSetup": {
+    "SF_ViewSetup": {
         "General": (
             "Provides read-only access to Setup and Configuration pages, including the user list, "
             "profiles, permission sets, connected app configurations, security health checks, "
@@ -324,11 +324,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - ManageRoles permission
+    # Source: Salesforce Help "User Permissions" - SF_ManageRoles permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows creating, editing, and deleting roles in the role hierarchy,
     # which controls record visibility and subordinate data access.
-    "ManageRoles": {
+    "SF_ManageRoles": {
         "General": (
             "Allows creating, editing, renaming, and deleting roles in the role hierarchy. "
             "The role hierarchy controls which users can view records owned by users below "
@@ -352,11 +352,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - ViewAllData permission
+    # Source: Salesforce Help "User Permissions" - SF_ViewAllData permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Grants read-only access to every record in the organisation regardless of
     # record ownership, sharing rules, or OWD settings. Does not include write access.
-    "ViewAllData": {
+    "SF_ViewAllData": {
         "General": (
             "Grants read access to every record in the organisation regardless of record ownership, "
             "sharing rules, role hierarchy, or Organisation-Wide Default (OWD) settings. "
@@ -373,18 +373,18 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
             "Salesforce Help: https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm"
         ),
         "RemediationInfo": (
-            "Remove ViewAllData from all non-system-administrator profiles and permission sets; document and justify any exception with a named business owner and review date. Treat any human account with ViewAllData as Tier Zero requiring privileged access management (PAM) controls. Prefer object-level SF_CanViewAll for cases where only specific object access is needed."
+            "Remove SF_ViewAllData from all non-system-administrator profiles and permission sets; document and justify any exception with a named business owner and review date. Treat any human account with SF_ViewAllData as Tier Zero requiring privileged access management (PAM) controls. Prefer object-level SF_CanViewAll for cases where only specific object access is needed."
         ),
         "OPSEC": (
-            "ViewAllData does not generate per-record read events in standard Salesforce logs. Bulk data extraction via the Bulk API or Workbench is logged in API usage event logs but is indistinguishable from legitimate admin data operations. Event Monitoring with Field Audit Trail, Data Export, or Report event types (additional licence required) is the only mechanism for detecting ViewAllData-based exfiltration in the default org."
+            "SF_ViewAllData does not generate per-record read events in standard Salesforce logs. Bulk data extraction via the Bulk API or Workbench is logged in API usage event logs but is indistinguishable from legitimate admin data operations. Event Monitoring with Field Audit Trail, Data Export, or Report event types (additional licence required) is the only mechanism for detecting SF_ViewAllData-based exfiltration in the default org."
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - ApiEnabled permission
+    # Source: Salesforce Help "User Permissions" - SF_ApiEnabled permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Required for any programmatic access to Salesforce via REST, SOAP, Bulk,
     # Metadata, or Tooling APIs. Without this permission, API calls are rejected.
-    "ApiEnabled": {
+    "SF_ApiEnabled": {
         "General": (
             "Grants the ability to interact with Salesforce via REST, SOAP, Bulk, Metadata, "
             "and Tooling APIs. Required for all programmatic integration, automation, and "
@@ -409,11 +409,11 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - ManageTranslation permission
+    # Source: Salesforce Help "User Permissions" - SF_ManageTranslation permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows managing the Translation Workbench, including enabling languages,
     # exporting/importing translation files, and overriding field and UI labels.
-    "ManageTranslation": {
+    "SF_ManageTranslation": {
         "General": (
             "Allows enabling and disabling languages in the Translation Workbench, exporting "
             "translation files, importing translated content, and overriding field labels, "
@@ -438,13 +438,13 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - EditTask permission
+    # Source: Salesforce Help "User Permissions" - SF_EditTask permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows editing Tasks owned by other users (beyond the standard ownership model
     # where a user can only edit their own tasks). Access remains SHARING-GATED:
     # the user can only edit tasks already visible to them via OWD, role hierarchy,
     # or sharing rules — it does not grant visibility to hidden tasks.
-    "EditTask": {
+    "SF_EditTask": {
         "General": (
             "Allows editing Task records owned by other users. By default, users can only edit "
             "Tasks they own. This permission overrides that ownership restriction and permits "
@@ -454,7 +454,7 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
         "AbuseInfo": (
             "Sharing-gated: blast radius is limited to tasks already visible via the org's "
-            "sharing model. When combined with ViewAllData, the user can edit every task in the "
+            "sharing model. When combined with SF_ViewAllData, the user can edit every task in the "
             "org, enabling complete activity-history falsification. On its own, it allows "
             "tampering with activity records belonging to visible peers, altering due dates, "
             "descriptions, and completion status. On orgs where Tasks track compliance, approvals, "
@@ -472,13 +472,13 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
     },
 
-    # Source: Salesforce Help "User Permissions" - EditEvent permission
+    # Source: Salesforce Help "User Permissions" - SF_EditEvent permission
     # https://help.salesforce.com/s/articleView?id=sf.admin_userperms.htm
     # Allows editing Event (calendar activity) records owned by other users,
     # overriding the standard per-owner edit restriction on calendar items.
     # Access remains SHARING-GATED: Events follow a ControlledByParent OWD model,
     # meaning visibility is governed by the parent record's sharing rules.
-    "EditEvent": {
+    "SF_EditEvent": {
         "General": (
             "Allows editing Event (calendar activity) records owned by other users. By default, "
             "users can only edit Events they own. This permission overrides that ownership "
@@ -488,7 +488,7 @@ SYSTEM_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         ),
         "AbuseInfo": (
             "Sharing-gated: blast radius is limited to events already visible through the parent "
-            "record's sharing model. When combined with ViewAllData, the user can edit every "
+            "record's sharing model. When combined with SF_ViewAllData, the user can edit every "
             "calendar event in the org, enabling complete activity-log falsification. On its own, "
             "it allows tampering with meeting records, interview schedules, and compliance-relevant "
             "events belonging to visible peers, altering times, invitees, and descriptions. "
@@ -651,7 +651,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         "AbuseInfo": (
             "Complete sharing bypass for this object. Even in a Private OWD org, the holder can read "
             "every record. For sensitive objects this enables full dataset exfiltration without needing "
-            "ModifyAllData. Particularly dangerous on User, custom credential/secret, or financial objects "
+            "SF_ModifyAllData. Particularly dangerous on User, custom credential/secret, or financial objects "
             "where private sharing is the primary access control."
         ),
         "References": (
@@ -674,7 +674,7 @@ OBJECT_PERMISSION_CONTEXT: Dict[str, Dict[str, str]] = {
         "General": (
             "Grants read, edit, delete, transfer ownership, and approval override on ALL records "
             "of this object type, regardless of record ownership, sharing rules, or OWD settings. "
-            "Equivalent to a per-object ModifyAllData for this specific SObject."
+            "Equivalent to a per-object SF_ModifyAllData for this specific SObject."
         ),
         "AbuseInfo": (
             "Complete sharing and ownership bypass for this object. A holder can read, alter, or destroy "
@@ -763,7 +763,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
         "AbuseInfo": (
             "Permission Sets are the primary vector for incremental privilege escalation in Salesforce. "
             "An attacker with ManageProfilesPermissionsets can create or edit a Permission Set to add "
-            "high-risk permissions (e.g. ModifyAllData, AuthorApex) and silently assign it to any user. "
+            "high-risk permissions (e.g. SF_ModifyAllData, AuthorApex) and silently assign it to any user. "
             "Because each assignment is additive, the effective permission set of a user is the union "
             "of all their assigned Permission Sets plus their Profile."
         ),
@@ -793,7 +793,7 @@ ASSIGNMENT_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
         "AbuseInfo": (
             "Assigning a Permission Set Group can silently grant a large set of permissions in a single "
             "operation, making the blast radius harder to audit than individual Permission Set assignments. "
-            "A malicious admin can embed high-risk Permission Sets (e.g. one containing ModifyAllData) "
+            "A malicious admin can embed high-risk Permission Sets (e.g. one containing SF_ModifyAllData) "
             "inside a Group with an innocuous name, then assign the Group to a target user."
         ),
         "References": (
@@ -1088,7 +1088,7 @@ GROUP_AND_ACCESS_EDGE_CONTEXT: Dict[str, Dict[str, str]] = {
             "A Connected App created by a compromised admin may have been configured with overly "
             "broad OAuth scopes or relaxed IP restrictions intentionally. Tracing SF_CreatedBy edges "
             "allows investigators to correlate suspicious app creation with known account compromise "
-            "windows. Attackers with admin access (ModifyAllData, CustomizeApplication) can register "
+            "windows. Attackers with admin access (SF_ModifyAllData, CustomizeApplication) can register "
             "rogue OAuth apps to establish persistent API access that survives password resets."
         ),
         "References": (
@@ -1490,8 +1490,8 @@ class EdgeBuilder:
 
                 # Merge contextual description and impact for high-risk permissions
                 # Source: SYSTEM_PERMISSION_CONTEXT dict defined in this module
-                if perm_name in SYSTEM_PERMISSION_CONTEXT:
-                    props.update(SYSTEM_PERMISSION_CONTEXT[perm_name])
+                if ("SF_" + perm_name) in SYSTEM_PERMISSION_CONTEXT:
+                    props.update(SYSTEM_PERMISSION_CONTEXT["SF_" + perm_name])
 
                 # Use the SF_-prefixed permission name as the edge kind
                 edges.append(
@@ -1541,8 +1541,8 @@ class EdgeBuilder:
 
                 # Merge contextual description and impact for high-risk permissions
                 # Source: SYSTEM_PERMISSION_CONTEXT dict defined in this module
-                if perm_name in SYSTEM_PERMISSION_CONTEXT:
-                    props.update(SYSTEM_PERMISSION_CONTEXT[perm_name])
+                if ("SF_" + perm_name) in SYSTEM_PERMISSION_CONTEXT:
+                    props.update(SYSTEM_PERMISSION_CONTEXT["SF_" + perm_name])
 
                 # Use the SF_-prefixed permission name as the edge kind
                 edges.append(

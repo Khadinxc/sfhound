@@ -1,0 +1,570 @@
+# SFHound Cypher Query Library
+# All edge types are prefixed with SF_ to match the SalesforceHound graph schema.
+# Queries marked with placeholder values (e.g. "PETER WIENER", "SECRETDATA__C")
+# must be customised before use.
+
+queries:
+
+  # ---------------------------------------------------------------------------
+  # Tier Zero
+  # ---------------------------------------------------------------------------
+
+  - name: "Tier Zero - System Level Org Compromise"
+    category: "tier_zero"
+    description: >
+      Users holding any of the highest-risk system permissions that can
+      directly compromise a Salesforce organisation. Use as a BloodHound
+      Cypher-rule Tier Zero zone.
+    query: |
+      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ModifyAllData|SF_ManageUsers|SF_ManageProfilesPermissionsets|SF_AuthorApex|SF_CustomizeApplication|SF_ManageSharing]->(:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN DISTINCT u
+
+  - name: "Tier Zero - Access to Highest Value Objects"
+    category: "tier_zero"
+    description: >
+      Users with any CRUD permission on a defined set of crown-jewel SObjects.
+      Add object names to the IN list as needed.
+    query: |
+      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(ps)-[:SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll]->(obj:SFSObject)
+      WHERE obj.name IN ["SECRETDATA__C", "SENSITIVEDATA__C"]
+        AND (ps:SFPermissionSet OR ps:SFProfile)
+      RETURN DISTINCT u
+
+  - name: "Tier Zero - Access to Highest Value Fields"
+    category: "tier_zero"
+    description: >
+      Users with any path to a defined set of crown-jewel fields. Add field
+      names to the IN list as needed (format: OBJECTNAME__C.FIELDNAME__C).
+    query: |
+      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFField)
+      WHERE f.name IN ["SECRETDATA__C.HIGHLYSENSITIVEFIELD__C", "SECRETDATA__C.OTHERSENSITIVEFIELD__C", "SENSITIVEDATA__C.HIGHLYSENSITIVEFIELD__C"]
+      RETURN DISTINCT u
+      LIMIT 1000
+
+  # ---------------------------------------------------------------------------
+  # User Hunting
+  # ---------------------------------------------------------------------------
+
+  - name: "User Hunting - All Relationships to 6th Degree"
+    category: "user_hunting"
+    description: >
+      All outgoing graph relationships from a specific user up to 6 hops.
+      Replace PETER WIENER with the target user's display name (case-insensitive).
+    query: |
+      MATCH (u:SFUser)
+      WHERE toLower(u.name) = toLower("PETER WIENER")
+      MATCH p = (u)-[*1..6]->(n)
+      RETURN DISTINCT p
+
+  # ---------------------------------------------------------------------------
+  # Object Permission Hunting
+  # ---------------------------------------------------------------------------
+
+  - name: "Object Permissions - User Access to Crown Jewel Object"
+    category: "object_permissions"
+    description: >
+      All permission paths from a specific user to a specific crown-jewel
+      SObject. Replace PETER WIENER and SECRETDATA__C with your targets.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(ps)-[r:SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll]->(obj:SFSObject)
+      WHERE toLower(u.name) = toLower("PETER WIENER") AND obj.name = "SECRETDATA__C"
+        AND (ps:SFPermissionSet OR ps:SFProfile)
+      RETURN path
+
+  - name: "Object Permissions - Shortest Path to Any Custom Object"
+    category: "object_permissions"
+    description: >
+      Shortest paths from any user to any custom SObject (API name ending in __C).
+    query: |
+      MATCH p = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFSObject)
+      WHERE f.name ENDS WITH '__C'
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  - name: "Object Permissions - All Shortest Paths to Any Custom Object"
+    category: "object_permissions"
+    description: >
+      All shortest paths from any user to any custom SObject.
+    query: |
+      MATCH p = allShortestPaths((u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFSObject))
+      WHERE f.name ENDS WITH '__C'
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  # ---------------------------------------------------------------------------
+  # Field Permission Hunting
+  # ---------------------------------------------------------------------------
+
+  - name: "Field Permissions - Shortest Path to Specific Field"
+    category: "field_permissions"
+    description: >
+      Shortest path from a specific user to a specific sensitive field.
+      Replace PETER WIENER and the field name with your targets.
+    query: |
+      MATCH p = shortestPath((u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFField))
+      WHERE toLower(u.name) = toLower("PETER WIENER")
+        AND f.name = "SECRETDATA__C.HIGHLYSENSITIVEFIELD__C"
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  - name: "Field Permissions - Shortest Path to Crown Jewel Field"
+    category: "field_permissions"
+    description: >
+      Shortest paths from any user to a specific high-value field.
+      Replace the field name with your target.
+    query: |
+      MATCH p = shortestPath((u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFField))
+      WHERE f.name = "SECRETDATA__C.HIGHLYSENSITIVEFIELD__C"
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  - name: "Field Permissions - All Users with Access to Specific Field"
+    category: "field_permissions"
+    description: >
+      All users reachable to a specific sensitive field via any permission path.
+      Replace the field name with your target.
+    query: |
+      MATCH p = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFField)
+      WHERE f.name = 'SECRETDATA__C.HIGHLYSENSITIVEFIELD__C'
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  - name: "Field Permissions - All Users with Access to Any Custom Field"
+    category: "field_permissions"
+    description: >
+      All users with any path to any custom field (API name ending in __C).
+    query: |
+      MATCH p = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet|SF_CanCreate|SF_CanRead|SF_CanEdit|SF_CanDelete|SF_CanViewAll|SF_CanModifyAll|SF_IsVisible|SF_ReadOnly*1..10]->(f:SFField)
+      WHERE f.name ENDS WITH '__C'
+        AND u <> f
+      RETURN p
+      LIMIT 1000
+
+  # ---------------------------------------------------------------------------
+  # Generic Counts
+  # ---------------------------------------------------------------------------
+
+  - name: "Count - All Users"
+    category: "generic_counts"
+    description: Return all SFUser nodes.
+    query: |
+      MATCH (m:SFUser) RETURN m
+
+  - name: "Count - All Permission Sets"
+    category: "generic_counts"
+    description: Return all SFPermissionSet nodes.
+    query: |
+      MATCH (m:SFPermissionSet) RETURN m
+
+  - name: "Count - All Nodes and Relationships (Expensive)"
+    category: "generic_counts"
+    description: >
+      Return all nodes and their immediate relationships. Expensive on large
+      graphs — use a low LIMIT.
+    query: |
+      MATCH (n)
+      OPTIONAL MATCH (n)-[r]->(m)
+      RETURN n, r, m
+      LIMIT 500
+
+  # ---------------------------------------------------------------------------
+  # System Permission Queries
+  # ---------------------------------------------------------------------------
+
+  - name: "System Permissions - Shortest Path to Org Compromise"
+    category: "system_permissions"
+    description: >
+      All paths from any user to the SFOrganization node via high-risk system
+      permissions, traversing the full assignment chain.
+    query: |
+      MATCH p = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(ps)-[r:SF_ModifyAllData|SF_ManageSharing|SF_ManageProfilesPermissionsets|SF_CustomizeApplication|SF_AuthorApex|SF_ManageUsers|SF_ManageRoles]->(org:SFOrganization)
+      WHERE (ps:SFProfile OR ps:SFPermissionSet)
+        AND u <> org
+      RETURN p
+      LIMIT 1000
+
+  - name: "System Permissions - All Users with ModifyAllData"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ModifyAllData permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ModifyAllData]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ManageUsers"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ManageUsers permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ManageUsers]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ManageProfilesPermissionsets"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ManageProfilesPermissionsets permission through
+      their Profile or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ManageProfilesPermissionsets]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with AuthorApex"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_AuthorApex permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_AuthorApex]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with CustomizeApplication"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_CustomizeApplication permission through their
+      Profile or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_CustomizeApplication]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ManageSharing"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ManageSharing permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ManageSharing]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ManageRoles"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ManageRoles permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ManageRoles]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ViewAllData"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ViewAllData permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ViewAllData]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ViewSetup"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ViewSetup permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ViewSetup]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ApiEnabled"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ApiEnabled permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ApiEnabled]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with ManageTranslation"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_ManageTranslation permission through their
+      Profile or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_ManageTranslation]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with EditTask"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_EditTask permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_EditTask]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with EditEvent"
+    category: "system_permissions"
+    description: >
+      All users who hold the SF_EditEvent permission through their Profile
+      or Permission Set.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[:SF_EditEvent]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN path
+
+  - name: "System Permissions - All Users with System Permissions against the Org"
+    category: "system_permissions"
+    description: >
+      All system permissions held by any user, shown as a graph path
+      through their Profile or Permission Set to the Organisation node.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[perm]->(org:SFOrganization)
+      WHERE (ps:SFProfile OR ps:SFPermissionSet)
+      RETURN path
+
+  - name: "System Permissions - All Permissions for a Specific User"
+    category: "system_permissions"
+    description: >
+      All system permissions held by a specific user, shown as a graph path
+      through their Profile or Permission Set to the Organisation node.
+      Replace the display name value with your target. Case-insensitive.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[perm]->(org:SFOrganization)
+      WHERE toLower(u.name) = toLower("Bruce Banner")
+        AND (ps:SFProfile OR ps:SFPermissionSet)
+      RETURN path
+
+  - name: "System Permissions - User Count per Permission"
+    category: "system_permissions"
+    description: >
+      Counts how many distinct users hold each system permission type,
+      sorted by most common. Returns a table — use BloodHound's Table view
+      to read the results.
+    query: |
+      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet]->(ps)-[perm]->(org:SFOrganization)
+      WHERE ps:SFProfile OR ps:SFPermissionSet
+      RETURN type(perm) AS Permission, COUNT(DISTINCT u) AS UserCount
+      ORDER BY UserCount DESC
+
+  # ---------------------------------------------------------------------------
+  # Role Hierarchy Queries
+  # ---------------------------------------------------------------------------
+
+  - name: "Role Hierarchy - All User Role Assignments"
+    category: "role_hierarchy"
+    description: All users and the roles they are assigned to.
+    query: |
+      MATCH (u:SFUser)-[h:SF_HasRole]->(r:SFRole)
+      RETURN u, h, r
+
+  - name: "Role Hierarchy - Hierarchy Tree (5 Levels)"
+    category: "role_hierarchy"
+    description: >
+      The full role inheritance tree up to 5 levels deep, rooted at
+      top-level roles (those with no parent).
+    query: |
+      MATCH path = (child:SFRole)-[:SF_InheritsRole*1..5]->(ancestor:SFRole)
+      WHERE NOT (ancestor)-[:SF_InheritsRole]->()
+      RETURN path
+
+  - name: "Role Hierarchy - Portal Role Users"
+    category: "role_hierarchy"
+    description: Users assigned to portal roles (Experience Cloud / Communities).
+    query: |
+      MATCH (u:SFUser)-[:SF_HasRole]->(r:SFRole)
+      WHERE r.IsPortalRole = True
+      RETURN u, r
+
+  # ---------------------------------------------------------------------------
+  # Group & Queue Queries
+  # ---------------------------------------------------------------------------
+
+  - name: "Groups - All Public Groups"
+    category: "groups_queues"
+    description: Return all SFGroup nodes.
+    query: |
+      MATCH (g:SFGroup)
+      RETURN g
+
+  - name: "Groups - Public Group Membership"
+    category: "groups_queues"
+    description: Direct and nested group membership for all Public Groups.
+    query: |
+      MATCH (g:SFGroup)-[h:SF_HasMember]->(m)
+      RETURN g, h, m
+
+  - name: "Groups - Users in a Specific Public Group"
+    category: "groups_queues"
+    description: >
+      All users reachable from a specific Public Group, including via nested
+      group membership (up to 3 hops). Replace KaiberSecInternalUsers with
+      your target group name.
+    query: |
+      MATCH path = (g:SFGroup {name: 'KaiberSecInternalUsers'})-[:SF_HasMember*1..3]->(u:SFUser)
+      RETURN path
+
+  - name: "Queues - All Queues"
+    category: "groups_queues"
+    description: Return all SFQueue nodes.
+    query: |
+      MATCH (q:SFQueue)
+      RETURN q
+
+  - name: "Queues - Queue Members"
+    category: "groups_queues"
+    description: All direct members (users and groups) of every Queue.
+    query: |
+      MATCH (q:SFQueue)-[h:SF_HasMember]->(m)
+      RETURN q, h, m
+
+  # ---------------------------------------------------------------------------
+  # Connected App Queries
+  # ---------------------------------------------------------------------------
+
+  - name: "Connected Apps - All Connected Apps"
+    category: "connected_apps"
+    description: Return all SFConnectedApp nodes.
+    query: |
+      MATCH (app:SFConnectedApp)
+      RETURN app
+
+  - name: "Connected Apps - Apps and Their Creators"
+    category: "connected_apps"
+    description: Each Connected App alongside the admin user who created it.
+    query: |
+      MATCH p = (app:SFConnectedApp)-[:SF_CreatedBy]->(u:SFUser)
+      RETURN p
+
+  - name: "Connected Apps - Admin Who Created the Most Apps"
+    category: "connected_apps"
+    description: >
+      Ranks admins by the number of Connected Apps they created. Returns a
+      table — use BloodHound's Table view to read the results.
+    query: |
+      MATCH (app:SFConnectedApp)-[:SF_CreatedBy]->(u:SFUser)
+      RETURN u.name AS Admin, count(app) AS AppCount
+      ORDER BY AppCount DESC
+
+  - name: "Connected Apps - Profiles and Permission Sets That Can Authorize"
+    category: "connected_apps"
+    description: >
+      Which Profiles and Permission Sets grant the right to OAuth-authorize
+      each Connected App.
+    query: |
+      MATCH p = (ps)-[:SF_CanAuthorize]->(app:SFConnectedApp)
+      RETURN p
+
+  - name: "Connected Apps - Full Attack Path to App Authorization"
+    category: "connected_apps"
+    description: >
+      Complete path from a user through their Profile or Permission Set to
+      Connected App authorization (up to 2 assignment hops).
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet*1..2]->(ps)-[:SF_CanAuthorize]->(app:SFConnectedApp)
+      RETURN path
+
+  - name: "Connected Apps - Self-Authorization Risk"
+    category: "connected_apps"
+    description: >
+      Connected Apps that do not require admin pre-approval, meaning any user
+      can self-authorize — a common OAuth phishing vector. Click a node to
+      inspect its AdminApprovedUsersOnly and CreatedDate properties.
+    query: |
+      MATCH (app:SFConnectedApp)
+      WHERE app.AdminApprovedUsersOnly = False
+      RETURN app
+
+  # ---------------------------------------------------------------------------
+  # SObject & CRUD Permission Queries
+  # ---------------------------------------------------------------------------
+
+  - name: "CRUD - All Custom Objects"
+    category: "crud_permissions"
+    description: >
+      All custom SObjects with their sharing model. Click a node to inspect
+      its Label and InternalSharingModel properties.
+    query: |
+      MATCH (obj:SFSObject)
+      WHERE obj.IsCustom = True
+      RETURN obj
+
+  - name: "CRUD - All Users Who Can Delete a Specific Object"
+    category: "crud_permissions"
+    description: >
+      Every user who can delete records on a specific SObject, showing the
+      granting Profile or Permission Set. Replace SECRETDATA__C with your target.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p)-[:SF_CanDelete]->(obj:SFSObject {name: "SECRETDATA__C"})
+      WHERE (p:SFPermissionSet OR p:SFProfile)
+      RETURN path
+
+  - name: "CRUD - Users with CanModifyAll on Custom Objects"
+    category: "crud_permissions"
+    description: >
+      Users who can bypass sharing rules on any custom object via the
+      CanModifyAll permission — high blast-radius access.
+    query: |
+      MATCH path = (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p)-[:SF_CanModifyAll]->(obj:SFSObject)
+      WHERE obj.IsCustom = True
+        AND (p:SFPermissionSet OR p:SFProfile)
+      RETURN path
+
+  - name: "CRUD - Suspicious Permissions (Create + Delete + ModifyAll)"
+    category: "crud_permissions"
+    description: >
+      Users who hold Create, Delete, AND ModifyAll on the same SObject
+      simultaneously — indicates overly permissive access.
+    query: |
+      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p1)-[:SF_CanCreate]->(obj:SFSObject),
+            (u)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p2)-[:SF_CanDelete]->(obj),
+            (u)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p3)-[:SF_CanModifyAll]->(obj)
+      WHERE (p1:SFPermissionSet OR p1:SFProfile)
+        AND (p2:SFPermissionSet OR p2:SFProfile)
+        AND (p3:SFPermissionSet OR p3:SFProfile)
+      RETURN DISTINCT u, obj
+
+  # ---------------------------------------------------------------------------
+  # Sharing Model Analysis
+  # ---------------------------------------------------------------------------
+
+  - name: "Sharing - Objects with Private Sharing Model"
+    category: "sharing_model"
+    description: >
+      SObjects configured with the most restrictive internal sharing model
+      (Private). These rely entirely on role hierarchy and sharing rules for
+      record visibility.
+    query: |
+      MATCH (obj:SFSObject)
+      WHERE obj.InternalSharingModel = "Private"
+      RETURN obj
+      ORDER BY obj.name
+      LIMIT 50
+
+  - name: "Sharing - Custom Objects with Public Access"
+    category: "sharing_model"
+    description: >
+      Custom SObjects with a permissive internal sharing model — potential
+      data exposure if sensitive data is stored here.
+    query: |
+      MATCH (obj:SFSObject)
+      WHERE obj.IsCustom = True
+        AND obj.InternalSharingModel IN ["Public Read/Write", "ReadWrite", "Public Read Only", "Read"]
+      RETURN obj
+
+  - name: "Sharing - Internal vs External Sharing Model Mismatch"
+    category: "sharing_model"
+    description: >
+      SObjects where the internal and external sharing models differ —
+      useful for spotting unintended data exposure to portal/community users.
+    query: |
+      MATCH (obj:SFSObject)
+      WHERE obj.InternalSharingModel <> obj.ExternalSharingModel
+      RETURN obj
+      LIMIT 50
