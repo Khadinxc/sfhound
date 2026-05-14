@@ -1461,14 +1461,14 @@ class EdgeBuilder:
     ) -> List[Dict[str, Any]]:
         """
         Connect PermissionSet -> Organization for every Permissions* flag that is True.
-        Each system permission becomes an edge kind (e.g., ModifyAllData, ViewSetup).
+        Each system permission becomes an SF_-prefixed edge kind (e.g., SF_ModifyAllData, SF_ViewSetup).
         
         Args:
             permission_sets: PermissionSet records with Permissions* fields
             org_node_id: The Organization node ID
         
         Returns:
-            List of edges from PermissionSets to Organization with permission as edge kind
+            List of edges from PermissionSets to Organization with SF_-prefixed permission as edge kind
         """
         edges: List[Dict[str, Any]] = []
 
@@ -1493,12 +1493,12 @@ class EdgeBuilder:
                 if perm_name in SYSTEM_PERMISSION_CONTEXT:
                     props.update(SYSTEM_PERMISSION_CONTEXT[perm_name])
 
-                # Use the permission name as the edge kind
+                # Use the SF_-prefixed permission name as the edge kind
                 edges.append(
                     _make_edge(
                         ps_id,
                         org_node_id,
-                        perm_name,  # Edge kind is the permission name
+                        "SF_" + perm_name,  # Edge kind: SF_-prefixed permission name
                         props,
                     )
                 )
@@ -1512,14 +1512,14 @@ class EdgeBuilder:
     ) -> List[Dict[str, Any]]:
         """
         Connect Profile -> Organization for each Permissions* flag that is True.
-        Each system permission becomes an edge kind (e.g., ModifyAllData, ViewSetup).
+        Each system permission becomes an SF_-prefixed edge kind (e.g., SF_ModifyAllData, SF_ViewSetup).
         
         Args:
             profiles: Profile records with Permissions* fields
             org_node_id: The Organization node ID
         
         Returns:
-            List of edges from Profiles to Organization with permission as edge kind
+            List of edges from Profiles to Organization with SF_-prefixed permission as edge kind
         """
         edges: List[Dict[str, Any]] = []
 
@@ -1544,12 +1544,12 @@ class EdgeBuilder:
                 if perm_name in SYSTEM_PERMISSION_CONTEXT:
                     props.update(SYSTEM_PERMISSION_CONTEXT[perm_name])
 
-                # Use the permission name as the edge kind
+                # Use the SF_-prefixed permission name as the edge kind
                 edges.append(
                     _make_edge(
                         pid,
                         org_node_id,
-                        perm_name,  # Edge kind is the permission name
+                        "SF_" + perm_name,  # Edge kind: SF_-prefixed permission name
                         props,
                     )
                 )
