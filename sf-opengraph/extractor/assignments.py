@@ -1,11 +1,16 @@
 import requests
 
 class AssignmentExtractor:
-    def __init__(self, auth):
+    def __init__(self, auth, throttle=None):
         self.auth = auth
         self.api_version = auth.config.get('api_version', 'v56.0')
+        self.throttle = throttle
 
     def query(self, soql):
+        soql_upper = soql.upper()
+        if self.throttle is not None and 'LIMIT' not in soql_upper and 'GROUP BY' not in soql_upper:
+            soql = soql.rstrip() + f" LIMIT {self.throttle}"
+
         access_token, instance_url = self.auth.access_token, self.auth.instance_url
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -26,6 +31,9 @@ class AssignmentExtractor:
                 total_size = data.get("totalSize")
 
             all_records.extend(data.get("records", []))
+
+            if self.throttle is not None:
+                break  # single-page mode: do not follow nextRecordsUrl
 
             if data.get("done") is True:
                 break

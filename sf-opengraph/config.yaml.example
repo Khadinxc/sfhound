@@ -1,5 +1,8 @@
 # Salesforce connection configuration
 salesforce:
+  # Auth type: certificate_and_secret (JWT Bearer flow — upload cert to Connected App, requires private_key)
+  #             client_credential_flow (OAuth 2.0 client credentials — configure Run As user on Connected App, requires client_secret)
+  type: certificate_and_secret
   client_id: YOUR_CLIENT_ID
   client_secret: YOUR_CLIENT_SECRET
   username: YOUR_USERNAME

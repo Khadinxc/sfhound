@@ -14,9 +14,10 @@ class MetadataExtractor:
       - auth.config (dict) with optional "api_version" (e.g. "v56.0")
     """
 
-    def __init__(self, auth):
+    def __init__(self, auth, throttle=None):
         self.auth = auth
         self.api_version = auth.config.get("api_version", "v56.0")
+        self.throttle = throttle
 
     # -----------------------
     # Low-level REST helpers
@@ -58,7 +59,14 @@ class MetadataExtractor:
         """
         SOQL query with pagination.
         Returns: {"records": [...]} (flattened across pages)
+
+        If throttle is set, appends LIMIT <n> and fetches a single page only.
+        GROUP BY queries are never given a LIMIT (SOQL does not support it).
         """
+        soql_upper = soql.upper()
+        if self.throttle is not None and 'LIMIT' not in soql_upper and 'GROUP BY' not in soql_upper:
+            soql = soql.rstrip() + f" LIMIT {self.throttle}"
+
         instance_url = self.auth.instance_url
         headers = self._headers()
 
@@ -74,6 +82,9 @@ class MetadataExtractor:
 
             data = r.json()
             all_records.extend(data.get("records", []))
+
+            if self.throttle is not None:
+                break  # single-page mode: do not follow nextRecordsUrl
 
             if data.get("done") is True:
                 break
@@ -471,7 +482,7 @@ class MetadataExtractor:
         """
         return self.query(soql)
 
-    def extract_field_permissions(self):
+    def extract_field_permissions(self, fields_filter: str = 'all') -> Dict[str, Any]:
         """
         FieldPermissions: Field-Level Security (FLS) grants from Profiles/PermSets to individual fields.
         
@@ -492,7 +503,15 @@ class MetadataExtractor:
         Edge modeling:
         - Profile/PermissionSet -[IsVisible]-> Field (when PermissionsEdit = True)
         - Profile/PermissionSet -[ReadOnly]-> Field (when PermissionsRead = True AND PermissionsEdit = False)
+
+        fields_filter:
+        - 'all'             : collect all field permissions (default)
+        - 'none'            : skip extraction, return empty result
+        - 'Obj.Field,...'   : collect only the named fields (SOQL IN filter on Field column)
         """
+        if fields_filter == 'none':
+            return {"records": []}
+
         soql = """
         SELECT
             Id,
@@ -502,6 +521,11 @@ class MetadataExtractor:
             PermissionsEdit,
             PermissionsRead,
             SystemModstamp
-        FROM FieldPermissions
-        """
+        FROM FieldPermissions"""
+
+        if fields_filter != 'all':
+            field_names = [name.strip() for name in fields_filter.split(',') if name.strip()]
+            quoted = ', '.join(f"'{name}'" for name in field_names)
+            soql += f"\n        WHERE Field IN ({quoted})"
+
         return self.query(soql)
