@@ -232,7 +232,7 @@ RETURN DISTINCT u;
 
 Same with your Tier zero users with access to highest value fields:
 ```
-MATCH (u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField)
+MATCH (u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFField)
 WHERE f.name IN ["SECRETDATA__C.HIGHLYSENSITIVEFIELD__C","SECRETDATA__C.OTHERSENSITIVEFIELD__C","SENSITIVEDATA__C.HIGHLYSENSITIVEFIELD__C"]
 RETURN DISTINCT u
 LIMIT 1000;
@@ -325,45 +325,45 @@ flowchart TD
 
 | Edge Type | Source | Target | Description | Traversable |
 |---|---|---|---|---|
-| `AssignedProfile` | `SFUser` | `SFProfile` | User is assigned to this Profile | Yes |
-| `AssignedPermissionSet` | `SFUser` | `SFPermissionSet` | User has been directly assigned this Permission Set | Yes |
-| `AssignedPermissionSetGroup` | `SFUser` | `SFPermissionSetGroup` | User has been assigned this Permission Set Group | Yes |
-| `HasPermissionSet` | `SFProfile` | `SFPermissionSet` | Profile is backed by its own PermissionSet record (IsOwnedByProfile=true) | Yes |
-| `IncludesPermissionSet` | `SFPermissionSetGroup` | `SFPermissionSet` | Permission Set Group includes this Permission Set | Yes |
-| `HasRole` | `SFUser` | `SFRole` | User is assigned to this role in the role hierarchy | Yes |
-| `InheritsRole` | `SFRole` | `SFRole` | Child role — users in the parent role can see records owned by users in this child role | Yes |
-| `MemberOfGroup` | `SFUser` | `SFGroup` | User is a direct member of this Public Group | Yes |
-| `MemberOfGroup` | `SFUser` | `SFQueue` | User is a member of this Queue | Yes |
-| `MemberOfGroup` | `SFGroup` | `SFGroup` | Nested group membership — this group is a member of another group | Yes |
-| `HasMember` | `SFGroup` | `SFUser` | Group contains this user (inverse of MemberOfGroup) | Yes |
-| `HasMember` | `SFGroup` | `SFGroup` | Group contains this nested group (inverse of MemberOfGroup) | Yes |
-| `HasMember` | `SFQueue` | `SFUser` | Queue contains this user (inverse of MemberOfGroup) | Yes |
-| `HasMember` | `SFQueue` | `SFGroup` | Queue contains this group (inverse of MemberOfGroup) | Yes |
-| `CanOwnObject` | `SFQueue` | `SFSObject` | Queue is configured to own records of this SObject type | Yes |
-| `CanCreate` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can create new records on this object | Yes |
-| `CanRead` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can read records on this object (subject to sharing) | Yes |
-| `CanEdit` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can edit records on this object (subject to sharing) | Yes |
-| `CanDelete` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can delete records on this object (subject to sharing) | Yes |
-| `CanViewAll` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can view ALL records on this object — bypasses sharing rules | Yes |
-| `CanModifyAll` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can edit/delete ALL records on this object — bypasses sharing rules | Yes |
-| `IsVisible` | `SFProfile` / `SFPermissionSet` | `SFField` | Field is readable and editable (PermissionsEdit=true) | Yes |
-| `ReadOnly` | `SFProfile` / `SFPermissionSet` | `SFField` | Field is readable but not editable (PermissionsRead=true, PermissionsEdit=false) | Yes |
-| `ModifyAllData` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: modify all records in the org (bypass all sharing) | Yes |
-| `ManageUsers` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create, edit, activate, and deactivate users | Yes |
-| `ManageRoles` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create and edit the role hierarchy | Yes |
-| `ManageSharing` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage sharing rules and OWD settings | Yes |
-| `ManageProfilesPermissionsets` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage profiles and permission sets | Yes |
-| `CustomizeApplication` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: customize Salesforce application metadata | Yes |
-| `AuthorApex` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create and deploy Apex code | Yes |
-| `ViewSetup` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: view setup and configuration | Yes |
-| `ViewAllData` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: read every record in the org regardless of sharing or OWD — exfiltration risk | Yes |
-| `ApiEnabled` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: allows all programmatic API access (REST, SOAP, Bulk, Metadata, Tooling) | Yes |
-| `ManageTranslation` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage the Translation Workbench — can rename fields and labels org-wide | Yes |
-| `EditTask` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: edit Task records owned by other users — **sharing-gated**: only tasks already visible via OWD/role hierarchy. Blast radius expands to all tasks when combined with `ViewAllData` | Yes |
-| `EditEvent` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: edit Event (calendar) records owned by other users — **sharing-gated** via ControlledByParent OWD. Blast radius expands to all events when combined with `ViewAllData` | Yes |
+| `SF_AssignedProfile` | `SFUser` | `SFProfile` | User is assigned to this Profile | Yes |
+| `SF_AssignedPermissionSet` | `SFUser` | `SFPermissionSet` | User has been directly assigned this Permission Set | Yes |
+| `SF_AssignedPermissionSetGroup` | `SFUser` | `SFPermissionSetGroup` | User has been assigned this Permission Set Group | Yes |
+| `SF_HasPermissionSet` | `SFProfile` | `SFPermissionSet` | Profile is backed by its own PermissionSet record (IsOwnedByProfile=true) | Yes |
+| `SF_IncludesPermissionSet` | `SFPermissionSetGroup` | `SFPermissionSet` | Permission Set Group includes this Permission Set | Yes |
+| `SF_HasRole` | `SFUser` | `SFRole` | User is assigned to this role in the role hierarchy | Yes |
+| `SF_InheritsRole` | `SFRole` | `SFRole` | Child role — users in the parent role can see records owned by users in this child role | Yes |
+| `SF_MemberOfGroup` | `SFUser` | `SFGroup` | User is a direct member of this Public Group | Yes |
+| `SF_MemberOfGroup` | `SFUser` | `SFQueue` | User is a member of this Queue | Yes |
+| `SF_MemberOfGroup` | `SFGroup` | `SFGroup` | Nested group membership — this group is a member of another group | Yes |
+| `SF_HasMember` | `SFGroup` | `SFUser` | Group contains this user (inverse of SF_MemberOfGroup) | Yes |
+| `SF_HasMember` | `SFGroup` | `SFGroup` | Group contains this nested group (inverse of SF_MemberOfGroup) | Yes |
+| `SF_HasMember` | `SFQueue` | `SFUser` | Queue contains this user (inverse of SF_MemberOfGroup) | Yes |
+| `SF_HasMember` | `SFQueue` | `SFGroup` | Queue contains this group (inverse of SF_MemberOfGroup) | Yes |
+| `SF_CanOwnObject` | `SFQueue` | `SFSObject` | Queue is configured to own records of this SObject type | Yes |
+| `SF_CanCreate` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can create new records on this object | Yes |
+| `SF_CanRead` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can read records on this object (subject to sharing) | Yes |
+| `SF_CanEdit` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can edit records on this object (subject to sharing) | Yes |
+| `SF_CanDelete` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can delete records on this object (subject to sharing) | Yes |
+| `SF_CanViewAll` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can view ALL records on this object — bypasses sharing rules | Yes |
+| `SF_CanModifyAll` | `SFProfile` / `SFPermissionSet` | `SFSObject` | Can edit/delete ALL records on this object — bypasses sharing rules | Yes |
+| `SF_IsVisible` | `SFProfile` / `SFPermissionSet` | `SFField` | Field is readable and editable (PermissionsEdit=true) | Yes |
+| `SF_ReadOnly` | `SFProfile` / `SFPermissionSet` | `SFField` | Field is readable but not editable (PermissionsRead=true, PermissionsEdit=false) | Yes |
+| `SF_ModifyAllData` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: modify all records in the org (bypass all sharing) | Yes |
+| `SF_ManageUsers` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create, edit, activate, and deactivate users | Yes |
+| `SF_ManageRoles` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create and edit the role hierarchy | Yes |
+| `SF_ManageSharing` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage sharing rules and OWD settings | Yes |
+| `SF_ManageProfilesPermissionsets` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage profiles and permission sets | Yes |
+| `SF_CustomizeApplication` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: customize Salesforce application metadata | Yes |
+| `SF_AuthorApex` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: create and deploy Apex code | Yes |
+| `SF_ViewSetup` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: view setup and configuration | Yes |
+| `SF_ViewAllData` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: read every record in the org regardless of sharing or OWD — exfiltration risk | Yes |
+| `SF_ApiEnabled` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: allows all programmatic API access (REST, SOAP, Bulk, Metadata, Tooling) | Yes |
+| `SF_ManageTranslation` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: manage the Translation Workbench — can rename fields and labels org-wide | Yes |
+| `SF_EditTask` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: edit Task records owned by other users — **sharing-gated**: only tasks already visible via OWD/role hierarchy. Blast radius expands to all tasks when combined with `SF_ViewAllData` | Yes |
+| `SF_EditEvent` | `SFProfile` / `SFPermissionSet` | `SFOrganization` | System permission: edit Event (calendar) records owned by other users — **sharing-gated** via ControlledByParent OWD. Blast radius expands to all events when combined with `SF_ViewAllData` | Yes |
 | *(other system permissions)* | `SFProfile` / `SFPermissionSet` | `SFOrganization` | Additional Permissions* flags captured as edge types when true | Yes |
-| `CanAuthorize` | `SFProfile` / `SFPermissionSet` | `SFConnectedApp` | Profile or Permission Set grants users the right to OAuth-authorize this Connected App | Yes |
-| `CreatedBy` | `SFConnectedApp` | `SFUser` | Records the admin who created this Connected App — audit/provenance edge | No |
+| `SF_CanAuthorize` | `SFProfile` / `SFPermissionSet` | `SFConnectedApp` | Profile or Permission Set grants users the right to OAuth-authorize this Connected App | Yes |
+| `SF_CreatedBy` | `SFConnectedApp` | `SFUser` | Records the admin who created this Connected App — audit/provenance edge | No |
 
 ### Edge Context Properties
 
@@ -389,17 +389,17 @@ This section documents intentional architectural choices in the graph model, inc
 
 Salesforce exposes hundreds of `Permissions*` boolean fields on `Profile` and `PermissionSet` records (e.g., `PermissionsModifyAllData`, `PermissionsAuthorApex`). Rather than creating a separate node for each system permission, SalesforceHound models each enabled permission as a **typed edge** from the granting `SFProfile`/`SFPermissionSet` to the central `SFOrganization` node.
 
-**Why:** BloodHound path traversal queries work best when privilege escalation is represented as edge relationships rather than node properties. Modeling system permissions as edges means standard shortest-path queries (`-[:ModifyAllData]->`) immediately surface every user who holds that permission through any assignment chain — no additional filtering on properties is required post-traversal.
+**Why:** BloodHound path traversal queries work best when privilege escalation is represented as edge relationships rather than node properties. Modeling system permissions as edges means standard shortest-path queries (`-[:SF_ModifyAllData]->`) immediately surface every user who holds that permission through any assignment chain — no additional filtering on properties is required post-traversal.
 
 **Tradeoff:** Queries that ask "list all permissions on a PermissionSet" require reading outgoing edge types to `SFOrganization` rather than reading a single node's property bag. This is natural in Cypher (`MATCH (ps)-[r]->(org:SFOrganization) RETURN type(r)`) and does not impose meaningful overhead.
 
-### CanOwnObject Targets Resolved via SObject Lookup
+### SF_CanOwnObject Targets Resolved via SObject Lookup
 
 Salesforce `QueueSobject` records contain only the API name of the object type a Queue can own (e.g., `Case`, `Incident`), not a Salesforce record ID. An early implementation created virtual destination nodes with a synthetic `SOBJECT::{TYPE}` identifier, which resulted in dangling edges because those virtual IDs had no matching `SFSObject` node in the graph.
 
-**Current approach:** `build_queue_object_access` receives the same `sobject_lookup` dictionary used by CRUD permission edges (maps `QualifiedApiName` → `DurableId`). `CanOwnObject` edges are only emitted when the SObject type is present in that lookup — i.e., it exists in the org's `EntityDefinition` and was extracted. Queue-to-SObject relationships are therefore consistent with the rest of the object permission graph, and no virtual nodes are needed.
+**Current approach:** `build_queue_object_access` receives the same `sobject_lookup` dictionary used by CRUD permission edges (maps `QualifiedApiName` → `DurableId`). `SF_CanOwnObject` edges are only emitted when the SObject type is present in that lookup — i.e., it exists in the org's `EntityDefinition` and was extracted. Queue-to-SObject relationships are therefore consistent with the rest of the object permission graph, and no virtual nodes are needed.
 
-**Tradeoff:** Queues that own SObject types absent from `EntityDefinition` (e.g., deprecated or inaccessible objects) will not have `CanOwnObject` edges in the graph. This is intentional — edges to non-existent nodes provide no traversal value and inflate the dangling edge warning count.
+**Tradeoff:** Queues that own SObject types absent from `EntityDefinition` (e.g., deprecated or inaccessible objects) will not have `SF_CanOwnObject` edges in the graph. This is intentional — edges to non-existent nodes provide no traversal value and inflate the dangling edge warning count.
 
 ### Aggregate PermissionSet Nodes Hydrated as Placeholders
 
@@ -411,7 +411,7 @@ Without handling this, every CRUD and FLS edge sourced from an aggregate PermSet
 
 **Tradeoff:** Placeholder nodes carry only an ID and a synthetic name — they have none of the rich metadata a normally-queried PermissionSet would have. If a future version can extract aggregate PermSet metadata directly, the placeholder hydration step can be removed or merged with the normal extraction path.
 
-### CanOwnObject and CRUD Edges Share the Same sobject_lookup
+### SF_CanOwnObject and CRUD Edges Share the Same sobject_lookup
 
 Both `build_queue_object_access` and `build_object_permissions` need to map an SObject API name to a graph node ID. The `sobject_lookup` dictionary (`QualifiedApiName` → `DurableId`) is constructed once in `sfhound.py` and passed to both builders. This ensures:
 - No duplication of the lookup construction logic
@@ -444,7 +444,7 @@ RETURN path
 
 Shortest path to any custom Salesforce objects:
 ```cypher
-MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFSObject)
+MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFSObject)
 WHERE f.name ENDS WITH '__C'
   AND u <> f
 RETURN p
@@ -452,7 +452,7 @@ LIMIT 1000
 ```
 
 ```cypher
-MATCH p=allShortestPaths((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFSObject))
+MATCH p=allShortestPaths((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFSObject))
 WHERE f.name ENDS WITH '__C'
   AND u <> f
 RETURN p
@@ -463,7 +463,7 @@ LIMIT 1000
 
 Shortest path from a user to a specific field:
 ```cypher
-MATCH p=shortestPath((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField))
+MATCH p=shortestPath((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFField))
 WHERE u.name = "PETER WIENER" 
   AND f.name = "SECRETDATA__C.HIGHLYSENSITIVEFIELD__C"
   AND u <> f
@@ -473,7 +473,7 @@ LIMIT 1000
 
 Shortest path to crown jewel fields:
 ```cypher
-MATCH p=shortestPath((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField))
+MATCH p=shortestPath((u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFField))
 WHERE f.name = "SECRETDATA__C.HIGHLYSENSITIVEFIELD__C"
   AND u <> f
 RETURN p
@@ -482,7 +482,7 @@ LIMIT 1000
 
 All users with access to any specific fields:
 ```cypher
-MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField)
+MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFField)
 WHERE f.name = 'SECRETDATA__C.HIGHLYSENSITIVEFIELD__C'
   AND u <> f
 RETURN p
@@ -491,7 +491,7 @@ LIMIT 1000
 
 All users with access to any custom fields:
 ```cypher
-MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly|Contains*1..10]->(f:SFField)
+MATCH p=(u:SFUser)-[:AssignedProfile|AssignedPermissionSet|AssignedPermissionSetGroup|HasPermissionSet|IncludesPermissionSet|CanCreate|CanRead|CanEdit|CanDelete|CanViewAll|CanModifyAll|IsVisible|ReadOnly*1..10]->(f:SFField)
 WHERE f.name ENDS WITH '__C'
   AND u <> f
 RETURN p
@@ -520,10 +520,10 @@ LIMIT 500
 
 ### System Permission Queries
 
-> **Note:** System permissions (e.g., `ModifyAllData`, `ViewSetup`) are modeled as edges to the `SFOrganization` node rather than as separate permission nodes. Each system permission is an edge type from `SFProfile`/`SFPermissionSet` to `SFOrganization`.
+> **Note:** System permissions (e.g., `SF_ModifyAllData`, `SF_ViewSetup`) are modeled as edges to the `SFOrganization` node rather than as separate permission nodes. Each system permission is an edge type from `SFProfile`/`SFPermissionSet` to `SFOrganization`.
 
 **Available system permissions in graph:**
-`ModifyAllData`, `ViewAllData`, `ViewSetup`, `ManageUsers`, `ManageRoles`, `ManageSharing`, `ManageProfilesPermissionsets`, `ManageTranslation`, `CustomizeApplication`, `AuthorApex`, `ApiEnabled`, `EditTask`, `EditEvent`
+`SF_ModifyAllData`, `SF_ViewAllData`, `SF_ViewSetup`, `SF_ManageUsers`, `SF_ManageRoles`, `SF_ManageSharing`, `SF_ManageProfilesPermissionsets`, `SF_ManageTranslation`, `SF_CustomizeApplication`, `SF_AuthorApex`, `SF_ApiEnabled`, `SF_EditTask`, `SF_EditEvent`
 
 **High-Risk Permissions (Tier 0):**
 
@@ -536,7 +536,7 @@ RETURN p
 LIMIT 1000
 ```
 
-All users with a specific high-risk permission (replace `ModifyAllData` as needed):
+All users with a specific high-risk permission (replace `SF_ModifyAllData` as needed):
 ```cypher
 MATCH path = (u:SFUser)-[:AssignedProfile|AssignedPermissionSet]->(ps)-[:ModifyAllData]->(org:SFOrganization)
 WHERE ps:SFProfile OR ps:SFPermissionSet
