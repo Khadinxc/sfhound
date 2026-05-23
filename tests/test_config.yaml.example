@@ -1,0 +1,33 @@
+# sfhound integration test configuration
+# ---
+# Copy this file to tests/test_config.yaml and fill in your credentials.
+# tests/test_config.yaml is git-ignored and must never be committed.
+#
+# The test suite requires:
+#   - A reachable Salesforce developer org
+#   - A running BloodHound CE instance (for cypher query tests)
+
+salesforce:
+  # Auth flow: 'certificate_and_secret' (JWT Bearer) or 'client_credential_flow' (OAuth 2.0)
+  type: certificate_and_secret
+
+  client_id: YOUR_CONNECTED_APP_CLIENT_ID
+
+  # JWT Bearer (certificate_and_secret): provide username + private_key path
+  username: YOUR_USERNAME@example.com
+  private_key: /path/to/server.key
+
+  # OAuth 2.0 (client_credential_flow): provide client_secret instead of the above two
+  # client_secret: YOUR_CLIENT_SECRET
+
+  login_url: https://login.salesforce.com   # use https://test.salesforce.com for sandboxes
+  api_version: v56.0
+
+bloodhound:
+  auto-ingest: false   # tests manage ingest themselves; leave false here
+  url: http://127.0.0.1:8080
+  username: YOUR_BLOODHOUND_USERNAME
+  password: YOUR_BLOODHOUND_PASSWORD
+
+env:
+  output_path: ./test_output

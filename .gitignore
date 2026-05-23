@@ -10,3 +10,8 @@ sf-opengraph/sfscan.pem
 salesforce-opengraph/opengraph_output/*
 sf-opengraph/opengraph_output/*
 .vscode
+tests/test_config.yaml
+test_output/
+.pytest_cache
+*.egg-info/
+docs
