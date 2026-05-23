@@ -9,13 +9,32 @@ description = "Six Degrees of System Administrator — Salesforce attack path an
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"
+authors = [{ name = "Khadinxc", email = "contact@kaibersec.com" }]
+keywords = ["salesforce", "bloodhound", "attack-path", "security", "pentest"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+]
 dependencies = [
-    "requests",
-    "PyJWT",
-    "pyaml",
-    "cryptography",
+    "requests>=2.32.5",
+    "PyJWT>=2.10.1",
+    "pyaml>=26.2.1",
+    "cryptography>=45.0.6",
     "bhopengraph>=1.3.1",
 ]
+
+[project.urls]
+Homepage = "https://sfhound.kaibersec.com"
+Repository = "https://github.com/Khadinxc/sfhound"
+"Bug Tracker" = "https://github.com/Khadinxc/sfhound/issues"
 
 [project.scripts]
 sfhound = "sfhound.sfhound:main"
