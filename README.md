@@ -666,7 +666,7 @@ RETURN path
 ```
 
 ConnectedApps that allow self-authorization (security risk):
-```cypher
+``` cypher
 MATCH (app:SFConnectedApp)
 WHERE app.AdminApprovedUsersOnly = False
 RETURN app.name, app.AdminApprovedUsersOnly, app.CreatedDate
@@ -861,3 +861,118 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program. If not, see https://www.gnu.org/licenses/.
 ```
+
+---
+
+## Release Notes
+
+## sfhound v2.0
+
+### What's new
+
+#### Installable Python package
+sfhound is now published to PyPI and installable with `pip install sfhound`. Both `sfhound` (CLI entry point) and `python -m sfhound` work after install. Previously the tool was only usable by cloning the repo and running `sf-opengraph/sfhound.py` directly.
+
+#### OAuth 2.0 Client Credentials flow (`--auth-type`)
+A second authentication method is now supported alongside the existing JWT Bearer (certificate) flow. Set `type: client_credential_flow` in your config with a `client_id` and `client_secret` — no certificate or private key file required. Pass `--auth-type` on the CLI to override the config file value.
+
+#### Scoped collection (`--scope`)
+Extract only the node types you need and write one output file per scope rather than a single monolithic export. Useful for large orgs or incremental BloodHound ingestion.
+
+```bash
+sfhound --scope users
+sfhound --scope users,groups,profiles
+```
+
+Valid values: `users`, `groups`, `queues`, `profiles`, `permissionsets`, `roles`, `connectedapps`, `objects`, `fields`.
+
+#### Field permission filtering (`--fields`)
+Control how much field-level permission data is collected.
+
+```bash
+sfhound --fields all                               # default — all field permissions
+sfhound --fields none                              # skip field permissions entirely (faster)
+sfhound --fields Account.Industry,Contact.Email    # specific fields only
+```
+
+Skipping or narrowing field permissions significantly reduces extraction time and output size on orgs with large object schemas.
+
+#### Throttle / single-page mode (`--throttle`)
+Rate-limit SOQL queries by appending `LIMIT <n>` and disabling `queryMore()` pagination. Useful for avoiding API governor limits or for quick test runs.
+
+```bash
+sfhound --throttle        # default 200 records per query
+sfhound --throttle 500
+```
+
+#### Verbose extraction progress (`--verbose`)
+Print per-query progress with record counts across both extraction phases, making it easy to see where time is being spent.
+
+```
+[*] Phase 1 — Metadata extraction
+  [ 1/17] profiles... 12 records
+  [ 2/17] permission sets... 48 records
+  ...
+[*] Phase 2 — Assignment extraction
+  [14/17] users... 31 records
+  ...
+```
+
+#### BloodHound API client
+`sfhound.bloodhound_api.BloodHoundAPI` is now a first-class importable module covering login, graph upload, OpenGraph schema validation, and Cypher query execution — available as a Python API in addition to the CLI `--auto-ingest` flag.
+
+#### CI/CD pipelines
+Two GitHub Actions workflows are included:
+- **`ci.yml`** — runs `ruff` lint and `bandit` + `pip-audit` security checks on every pull request to `main`
+- **`release.yml`** — triggered by a `v*.*.*` tag; runs security checks, builds the sdist and wheel, publishes to PyPI via OIDC trusted publishing, and creates a GitHub Release with auto-generated notes
+
+#### Integration test suite
+A full pytest-based integration test suite under `tests/`. 68 tests cover every CLI flag and scope, BloodHound upload, and all 52 Cypher queries in the library. See `docs/test-suite-usage.md` for setup instructions.
+
+### Other changes
+
+- `requirements.txt` now pins minimum versions for all dependencies (`requests>=2.32.5`, `PyJWT>=2.10.1`, `pyaml>=26.2.1`, `cryptography>=45.0.6`, `bhopengraph>=1.3.1`)
+- `pyproject.toml` includes authors, homepage, repository URL, bug tracker URL, and PyPI classifiers
+- Example scripts, schema dumps, and the Cypher query library bundled under `sfhound/examples/`
+- `sfhound.egg-info/` and `test_output/` added to `.gitignore`
+
+## sfhound v1.2
+### Minor Release
+- Added graphing for Record Ownership when modelling a Salesforce Organisation.
+- New cypher query to query ownership of records within a Salesforce Object.
+
+## sfhound v1.1
+### Minor Release
+- Aligning with bhopengraph Python3 classes for best practices as recommended by SpecterOps
+- Updated documentation with guidance on new nodes and edges
+
+## sfhound v1.1
+### Initial Release
+
+Collector:
+- JWT Bearer OAuth authentication via Salesforce Connected App
+- config.yaml and full command-line override support
+- Extraction of Users, Profiles, Permission Sets, Permission Set Groups
+- Extraction of Role Hierarchy (roles and InheritsRole edges)
+- Extraction of Public Groups and Queues with nested membership resolution
+- Extraction of Object Permissions (CRUD, ViewAll, ModifyAll) per Profile/PermissionSet
+- Extraction of Field-Level Security (IsVisible, ReadOnly) per Profile/PermissionSet
+- Extraction of Connected Apps with CanAuthorize edge resolution
+- OWD (InternalSharingModel, ExternalSharingModel) capture on all SObjects
+- Aggregate PermissionSet placeholder hydration for 0PSG… IDs
+- BloodHound OpenGraph v2 output with full schema validation
+- Auto-ingest to BloodHound CE (upload, poll, status reporting)
+- Custom icon registration script (examples/post_custom_icons.py)
+
+Graph model:
+- 11 node types with coloured icons
+- 40+ typed edge types
+- Full edge context properties: General, AbuseInfo, RemediationInfo, OPSEC, References
+- MITRE ATT&CK mappings on all named system permission edges
+
+Documentation:
+- Collector setup guide (Connected App creation, JWT cert generation, minimum permissions)
+- Schema reference (all nodes, edges, properties)
+- Custom Cypher query library
+- Tier Zero Cypher rules for BloodHound CE
+- Design decisions document
