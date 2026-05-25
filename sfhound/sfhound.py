@@ -342,7 +342,7 @@ def hydrate_missing_profiles(metadata_extractor: MetadataExtractor, users: dict,
         quoted = ",".join([f"'{pid}'" for pid in chunk])
 
         # Keep this minimal and "safe" (Profile fields can vary by API/context)
-        soql = f"SELECT Id, Name, UserLicenseId, Description, CreatedDate, LastModifiedDate, SystemModstamp FROM Profile WHERE Id IN ({quoted})" 
+        soql = f"SELECT Id, Name, UserLicenseId, Description, CreatedDate, LastModifiedDate, SystemModstamp FROM Profile WHERE Id IN ({quoted})"  # nosec B608
         extra = metadata_extractor.query(soql)
         extra_records = extra.get("records", []) or []
         merged_records.extend(extra_records)

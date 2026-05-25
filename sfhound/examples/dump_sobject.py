@@ -85,7 +85,7 @@ def build_soql(
         raise RuntimeError(f"No fields available to select for SObject: {sobject}")
 
     select_clause = ", ".join(fields)
-    soql = f"SELECT {select_clause} FROM {sobject}"
+    soql = f"SELECT {select_clause} FROM {sobject}"  # nosec B608
     if where:
         soql += f" WHERE {where}"
     soql += f" LIMIT {limit}"

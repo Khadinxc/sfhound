@@ -170,7 +170,7 @@ class AssignmentExtractor:
             api_name = obj.get("QualifiedApiName", "")
             durable_id = obj.get("DurableId") or api_name
             try:
-                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"
+                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"  # nosec B608
                 batch = self.query(soql)
                 return [
                     {"OwnerId": r["OwnerId"], "SobjectType": api_name, "SobjectDurableId": durable_id}

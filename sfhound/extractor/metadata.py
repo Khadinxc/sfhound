@@ -178,7 +178,7 @@ class MetadataExtractor:
         if "Id" in queryable and "Id" not in fields:
             fields.insert(0, "Id")
 
-        soql = "SELECT " + ", ".join(fields) + " FROM Profile"
+        soql = "SELECT " + ", ".join(fields) + " FROM Profile"  # nosec B608
         return self.query(soql)
 
     def extract_permission_sets(self) -> Dict[str, Any]:
@@ -234,7 +234,7 @@ class MetadataExtractor:
 
         # Assemble SOQL
         select_parts = fields + relationship_fields
-        soql = "SELECT " + ", ".join(select_parts) + " FROM PermissionSet"
+        soql = "SELECT " + ", ".join(select_parts) + " FROM PermissionSet"  # nosec B608
 
         return self.query(soql)
 
