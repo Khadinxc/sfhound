@@ -213,7 +213,7 @@ def main():
 
     authenticate()
 
-    print(f"\n[*] Fetching existing saved queries from BloodHound...")
+    print("\n[*] Fetching existing saved queries from BloodHound...")
     existing = get_existing_saved_queries()
     print(f"[*] Found {len(existing)} existing saved queries")
 

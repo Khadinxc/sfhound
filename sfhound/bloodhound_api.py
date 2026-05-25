@@ -155,7 +155,7 @@ class BloodHoundAPI:
                 "deleteDataQualityHistory": True,
                 "deleteAssetGroupSelectors": [0]
             }
-            resp = requests.post(self.clear_url, headers=headers, json=data)
+            resp = requests.post(self.clear_url, headers=headers, json=data, timeout=30)
             if resp.status_code not in (200, 204):
                 print(f'Failed to clear BloodHound database: {resp.status_code} {resp.text}')
                 return

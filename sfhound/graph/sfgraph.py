@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-from bhopengraph.Edge import Edge
 from bhopengraph.Node import Node
 from bhopengraph.OpenGraph import OpenGraph
 

@@ -2,7 +2,7 @@ import yaml
 import jwt
 import time
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 
 class SalesforceClient:

@@ -89,7 +89,7 @@ def run_cypher(query: str, include_properties: bool = True):
 
     try:
         data = r.json()
-        print(f"[+] Query successful")
+        print("[+] Query successful")
         return data
     except Exception as e:
         print(f"[!] Failed to parse response: {e}")

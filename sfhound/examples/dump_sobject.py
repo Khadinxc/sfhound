@@ -37,7 +37,6 @@ from extractor.sf_client import SalesforceClient
 def describe_object(sf: SalesforceClient, sobject: str) -> Dict[str, Any]:
     # IMPORTANT: SalesforceClient.get(...) in your project likely expects a FULL REST path
     # without base URL, e.g. "/services/data/v56.0/..."
-    api_ver = sf.api_version  # e.g. "v56.0"
     path = f"/sobjects/{sobject}/describe"
     return sf.get(path)
 
