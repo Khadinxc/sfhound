@@ -3,7 +3,6 @@ import yaml
 import requests
 import jwt
 import time
-from pathlib import Path
 
 VALID_AUTH_TYPES = ('certificate_and_secret', 'client_credential_flow')
 
@@ -54,7 +53,7 @@ class SalesforceAuth:
             'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             'assertion': assertion
         }
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=30)
         if response.status_code == 200:
             resp_json = response.json()
             self.access_token = resp_json['access_token']
@@ -72,7 +71,7 @@ class SalesforceAuth:
             'client_id': self.config['client_id'],
             'client_secret': self.config['client_secret'],
         }
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=30)
         if response.status_code == 200:
             resp_json = response.json()
             self.access_token = resp_json['access_token']

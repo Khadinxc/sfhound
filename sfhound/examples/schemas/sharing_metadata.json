@@ -1,0 +1,93 @@
+{
+  "EntityDefinition": {
+    "success": true,
+    "records": [
+      {
+        "attributes": {
+          "type": "EntityDefinition",
+          "url": "/services/data/v56.0/sobjects/EntityDefinition/01IgL000004Y3xG"
+        },
+        "QualifiedApiName": "SecretData__c",
+        "DeveloperName": "SecretData",
+        "Label": "SecretData",
+        "InternalSharingModel": "ReadWrite",
+        "ExternalSharingModel": "Private"
+      },
+      {
+        "attributes": {
+          "type": "EntityDefinition",
+          "url": "/services/data/v56.0/sobjects/EntityDefinition/ServiceAppointment"
+        },
+        "QualifiedApiName": "ServiceAppointment",
+        "DeveloperName": "ServiceAppointment",
+        "Label": "Service Appointment",
+        "InternalSharingModel": "ReadWrite",
+        "ExternalSharingModel": "Private"
+      },
+      {
+        "attributes": {
+          "type": "EntityDefinition",
+          "url": "/services/data/v56.0/sobjects/EntityDefinition/ProductCategory"
+        },
+        "QualifiedApiName": "ProductCategory",
+        "DeveloperName": "ProductCategory",
+        "Label": "Category",
+        "InternalSharingModel": "ControlledByParent",
+        "ExternalSharingModel": "ControlledByParent"
+      },
+      {
+        "attributes": {
+          "type": "EntityDefinition",
+          "url": "/services/data/v56.0/sobjects/EntityDefinition/InvoiceLine"
+        },
+        "QualifiedApiName": "InvoiceLine",
+        "DeveloperName": "InvoiceLine",
+        "Label": "Invoice Line",
+        "InternalSharingModel": "ControlledByParent",
+        "ExternalSharingModel": "ControlledByParent"
+      },
+      {
+        "attributes": {
+          "type": "EntityDefinition",
+          "url": "/services/data/v56.0/sobjects/EntityDefinition/PromotionQualifier"
+        },
+        "QualifiedApiName": "PromotionQualifier",
+        "DeveloperName": "PromotionQualifier",
+        "Label": "Promotion Qualifier",
+        "InternalSharingModel": "ControlledByParent",
+        "ExternalSharingModel": "ControlledByParent"
+      }
+    ]
+  },
+  "CustomObject": {
+    "success": false,
+    "error": "[{\"message\":\"\\nDeveloperName, SharingModel FROM CustomObject LIMIT 5\\n                                 ^\\nERROR at Row:1:Column:45\\nsObject type 'CustomObject' is not supported. If you are attempting to use a custom object, be sure to append the '__c' after the entity name. Please reference your WSDL or the describe call for the appropriate names.\",\"errorCode\":\"INVALID_TYPE\"}]"
+  },
+  "SharingRuleCategory": {
+    "success": false,
+    "error": "[{\"message\":\"\\nSELECT Id, Name FROM SharingRuleCategory LIMIT 5\\n                     ^\\nERROR at Row:1:Column:22\\nsObject type 'SharingRuleCategory' is not supported. If you are attempting to use a custom object, be sure to append the '__c' after the entity name. Please reference your WSDL or the describe call for the appropriate names.\",\"errorCode\":\"INVALID_TYPE\"}]"
+  },
+  "Territory2": {
+    "success": false,
+    "error": "[{\"message\":\"\\nSELECT Id, Name, DeveloperName FROM Territory2 LIMIT 5\\n                                    ^\\nERROR at Row:1:Column:37\\nsObject type 'Territory2' is not supported. If you are attempting to use a custom object, be sure to append the '__c' after the entity name. Please reference your WSDL or the describe call for the appropriate names.\",\"errorCode\":\"INVALID_TYPE\"}]"
+  },
+  "EntityParticle": {
+    "success": true,
+    "records": [
+      {
+        "attributes": {
+          "type": "EntityParticle",
+          "url": "/services/data/v56.0/sobjects/EntityParticle/Account.Id"
+        },
+        "EntityDefinition": {
+          "attributes": {
+            "type": "EntityDefinition",
+            "url": "/services/data/v56.0/sobjects/EntityDefinition/Account"
+          },
+          "QualifiedApiName": "Account"
+        },
+        "QualifiedApiName": "Id"
+      }
+    ]
+  }
+}

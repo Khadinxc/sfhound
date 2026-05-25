@@ -374,14 +374,6 @@ queries:
       WHERE NOT (ancestor)-[:SF_InheritsRole]->()
       RETURN path
 
-  - name: "Role Hierarchy - Portal Role Users"
-    category: "role_hierarchy"
-    description: Users assigned to portal roles (Experience Cloud / Communities).
-    query: |
-      MATCH (u:SFUser)-[:SF_HasRole]->(r:SFRole)
-      WHERE r.IsPortalRole = True
-      RETURN u, r
-
   # ---------------------------------------------------------------------------
   # Group & Queue Queries
   # ---------------------------------------------------------------------------
@@ -403,11 +395,13 @@ queries:
   - name: "Groups - Users in a Specific Public Group"
     category: "groups_queues"
     description: >
-      All users reachable from a specific Public Group, including via nested
-      group membership (up to 3 hops). Replace KaiberSecInternalUsers with
+      All members reachable from a specific Public Group, including via nested
+      group membership (up to 3 hops). Members may be SFUser or SFGroup nodes —
+      system-managed groups (AllInternalUsers, AllPartnerUsers) contain nested
+      groups rather than direct user edges. Replace KaiberSecInternalUsers with
       your target group's DeveloperName (the API name, not the display label).
     query: |
-      MATCH path = (g:SFGroup {DeveloperName: 'KaiberSecInternalUsers'})-[:SF_HasMember*1..3]->(u:SFUser)
+      MATCH path = (g:SFGroup {DeveloperName: 'KaiberSecInternalUsers'})-[:SF_HasMember*1..3]->(m)
       RETURN path
 
   - name: "Queues - All Queues"
@@ -515,20 +509,6 @@ queries:
       WHERE obj.IsCustom = True
         AND (p:SFPermissionSet OR p:SFProfile)
       RETURN path
-
-  - name: "CRUD - Suspicious Permissions (Create + Delete + ModifyAll)"
-    category: "crud_permissions"
-    description: >
-      Users who hold Create, Delete, AND ModifyAll on the same SObject
-      simultaneously — indicates overly permissive access.
-    query: |
-      MATCH (u:SFUser)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p1)-[:SF_CanCreate]->(obj:SFSObject),
-            (u)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p2)-[:SF_CanDelete]->(obj),
-            (u)-[:SF_AssignedProfile|SF_AssignedPermissionSet|SF_AssignedPermissionSetGroup|SF_HasPermissionSet|SF_IncludesPermissionSet*1..5]->(p3)-[:SF_CanModifyAll]->(obj)
-      WHERE (p1:SFPermissionSet OR p1:SFProfile)
-        AND (p2:SFPermissionSet OR p2:SFProfile)
-        AND (p3:SFPermissionSet OR p3:SFProfile)
-      RETURN DISTINCT u, obj
 
   # ---------------------------------------------------------------------------
   # Sharing Model Analysis

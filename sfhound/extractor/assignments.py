@@ -1,4 +1,5 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor
 
 class AssignmentExtractor:
     def __init__(self, auth, throttle=None):
@@ -152,38 +153,34 @@ class AssignmentExtractor:
         detection of indirect record access via the role hierarchy.
 
         Filters to custom objects only (QualifiedApiName ending in '__c'), excluding custom
-        settings and non-queryable objects. Objects without an OwnerId field or inaccessible
-        to the running user are silently skipped.
+        settings and non-queryable objects. Queries run in parallel across all custom objects
+        (max 8 workers). Objects without an OwnerId field or inaccessible to the running user
+        are silently skipped.
 
         Returns a list of {"OwnerId": ..., "SobjectType": ..., "SobjectDurableId": ...} dicts.
         """
-        results = []
-        for obj in sobjects_data.get("records", []):
+        custom_objects = [
+            obj for obj in sobjects_data.get("records", [])
+            if obj.get("QualifiedApiName", "").endswith("__c")
+            and not obj.get("IsCustomSetting")
+            and obj.get("IsQueryable")
+        ]
+
+        def _query_object(obj):
             api_name = obj.get("QualifiedApiName", "")
             durable_id = obj.get("DurableId") or api_name
-
-            # Limit to custom data objects only
-            if not api_name.endswith("__c"):
-                continue
-            if obj.get("IsCustomSetting"):
-                continue
-            if not obj.get("IsQueryable"):
-                continue
-
             try:
-                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"
+                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"  # nosec B608
                 batch = self.query(soql)
-                for r in batch.get("records", []):
-                    owner_id = r.get("OwnerId")
-                    if owner_id:
-                        results.append({
-                            "OwnerId": owner_id,
-                            "SobjectType": api_name,
-                            "SobjectDurableId": durable_id,
-                        })
+                return [
+                    {"OwnerId": r["OwnerId"], "SobjectType": api_name, "SobjectDurableId": durable_id}
+                    for r in batch.get("records", []) if r.get("OwnerId")
+                ]
             except Exception:
-                # Object lacks OwnerId field, has zero records,
-                # or running user lacks read permission — skip silently.
-                pass
+                return []
 
+        results = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            for partial in executor.map(_query_object, custom_objects):
+                results.extend(partial)
         return results

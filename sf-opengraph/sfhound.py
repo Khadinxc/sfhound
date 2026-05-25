@@ -4,7 +4,7 @@ All the work happens in this module wiring all the supporting functions together
 """
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 import yaml
 import argparse
@@ -53,6 +53,9 @@ Examples:
     
     # Salesforce connection settings
     sf_group = parser.add_argument_group("Salesforce connection")
+    sf_group.add_argument("--auth-type", choices=['certificate_and_secret', 'client_credential_flow'],
+                          help="Auth flow: 'certificate_and_secret' (JWT Bearer, requires private-key) "
+                               "or 'client_credential_flow' (OAuth 2.0 client credentials, requires client-secret)")
     sf_group.add_argument("--client-id", help="Salesforce Connected App Client ID")
     sf_group.add_argument("--client-secret", help="Salesforce Connected App Client Secret")
     sf_group.add_argument("--username", help="Salesforce username")
@@ -63,6 +66,37 @@ Examples:
     # Output settings
     output_group = parser.add_argument_group("Output settings")
     output_group.add_argument("--output-path", help="Directory for output JSON files (default: ./opengraph_output)")
+
+    # Extraction settings
+    extract_group = parser.add_argument_group("Extraction settings")
+    extract_group.add_argument(
+        "-r", "--throttle",
+        nargs="?",
+        const=200,
+        type=int,
+        default=None,
+        metavar="LIMIT",
+        help="Throttled mode: fetch one page per query without queryMore(). "
+             "Appends LIMIT <n> to all SOQL queries (default 200 when -r is given without a value).",
+    )
+    extract_group.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        default=False,
+        help="Print per-query progress and record counts during extraction.",
+    )
+    extract_group.add_argument(
+        "-f", "--fields",
+        nargs="?",
+        const="all",
+        default="all",
+        metavar="FILTER",
+        help="Field permission filter. "
+             "'all' (default): collect all field permissions. "
+             "'none': skip field permission collection entirely. "
+             "Comma-separated field API names to collect only those fields "
+             "(e.g. -f Account.Industry,Contact.Email).",
+    )
 
     # BloodHound CE integration
     bh_group = parser.add_argument_group("BloodHound CE integration")
@@ -94,6 +128,8 @@ def load_config(args):
         config = yaml.safe_load(f)
     
     # Override with CLI arguments (if provided)
+    if args.auth_type:
+        config.setdefault('salesforce', {})['type'] = args.auth_type
     if args.client_id:
         config.setdefault('salesforce', {})['client_id'] = args.client_id
     if args.client_secret:
@@ -131,13 +167,21 @@ def load_config(args):
                   f"--bh-url / --bh-username / --bh-password")
             sys.exit(1)
 
-    # Validate required fields
+    # Validate required fields based on auth type
     sf_config = config.get('salesforce', {})
-    required = ['client_id', 'username', 'private_key', 'login_url']
+    auth_type = sf_config.get('type', 'certificate_and_secret')
+
+    if auth_type == 'certificate_and_secret':
+        required = ['client_id', 'username', 'private_key', 'login_url']
+    elif auth_type == 'client_credential_flow':
+        required = ['client_id', 'client_secret', 'login_url']
+    else:
+        print(f"[!] Error: Unknown auth type '{auth_type}'. Valid options: certificate_and_secret, client_credential_flow")
+        sys.exit(1)
+
     missing = [field for field in required if not sf_config.get(field)]
-    
     if missing:
-        print(f"[!] Error: Missing required Salesforce configuration fields: {', '.join(missing)}")
+        print(f"[!] Error: Missing required Salesforce configuration fields for '{auth_type}': {', '.join(missing)}")
         print(f"[!] Provide them in {config_path} or via CLI arguments (--help for details)")
         sys.exit(1)
     
@@ -248,7 +292,7 @@ def build_output_path(config: dict) -> str:
     org_subdomain = hostname.split(".")[0]
 
     # Safe timestamp
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     filename = f"{org_subdomain}_{timestamp}.json"
     return os.path.join(base_output_dir, filename)
@@ -258,39 +302,63 @@ def main():
     """Main graph export function."""
     args = parse_arguments()
     config = load_config(args)
-    
+    throttle = args.throttle
+    verbose = args.verbose
+    fields_filter = args.fields
+
     output_path = build_output_path(config)
 
     auth = SalesforceAuth(config)
     auth.authenticate()
 
+    if throttle is not None:
+        print(f"[~] Throttled mode enabled: LIMIT {throttle} per query, queryMore() disabled")
+
+    _step = [0]
+    _total = 17
+
+    def _run(label, fn):
+        _step[0] += 1
+        if verbose:
+            print(f"  [{_step[0]:2d}/{_total}] {label}...", end="", flush=True)
+        result = fn()
+        if verbose:
+            count = len(result.get("records", [])) if isinstance(result, dict) else len(result)
+            print(f" {count:,} records")
+        return result
+
     # -----------------------------
     # Phase 1 — Metadata extraction
     # -----------------------------
-    metadata_extractor = MetadataExtractor(auth)
+    metadata_extractor = MetadataExtractor(auth, throttle=throttle)
 
-    profiles = metadata_extractor.extract_profiles()
-    permission_sets = metadata_extractor.extract_permission_sets()
-    groups = metadata_extractor.extract_groups()
-    permission_set_groups = metadata_extractor.extract_permission_set_groups()
-    permission_set_group_components = metadata_extractor.extract_permission_set_group_components()
-    user_roles = metadata_extractor.extract_user_roles()
-    queue_sobjects = metadata_extractor.extract_queue_sobjects()
-    connected_apps = metadata_extractor.extract_connected_apps()
-    setup_entity_access = metadata_extractor.extract_setup_entity_access()
-    sobjects = metadata_extractor.extract_sobjects()
-    object_permissions = metadata_extractor.extract_object_permissions()
-    field_permissions = metadata_extractor.extract_field_permissions()
+    if verbose:
+        print("[*] Phase 1 — Metadata extraction")
+    profiles                        = _run("profiles",                        metadata_extractor.extract_profiles)
+    permission_sets                 = _run("permission sets",                 metadata_extractor.extract_permission_sets)
+    groups                          = _run("groups",                          metadata_extractor.extract_groups)
+    permission_set_groups           = _run("permission set groups",           metadata_extractor.extract_permission_set_groups)
+    permission_set_group_components = _run("permission set group components", metadata_extractor.extract_permission_set_group_components)
+    user_roles                      = _run("user roles",                      metadata_extractor.extract_user_roles)
+    queue_sobjects                  = _run("queue sobjects",                  metadata_extractor.extract_queue_sobjects)
+    connected_apps                  = _run("connected apps",                  metadata_extractor.extract_connected_apps)
+    setup_entity_access             = _run("setup entity access",             metadata_extractor.extract_setup_entity_access)
+    sobjects                        = _run("sobjects",                        metadata_extractor.extract_sobjects)
+    object_permissions              = _run("object permissions",              metadata_extractor.extract_object_permissions)
+    field_permissions               = _run("field permissions",               lambda: metadata_extractor.extract_field_permissions(fields_filter))
 
     # -----------------------------
     # Phase 2 — Assignment extraction
     # -----------------------------
-    assignment_extractor = AssignmentExtractor(auth)
-    users = assignment_extractor.extract_users()
-    permission_set_assignments = assignment_extractor.extract_permission_set_assignments()
-    group_members = assignment_extractor.extract_group_members()
-    permission_set_group_assignments = assignment_extractor.extract_permission_set_group_assignments()
-    record_owners = assignment_extractor.extract_record_owners(sobjects)
+    assignment_extractor = AssignmentExtractor(auth, throttle=throttle)
+
+    if verbose:
+        print("[*] Phase 2 — Assignment extraction")
+    users                            = _run("users",                            assignment_extractor.extract_users)
+    permission_set_assignments       = _run("permission set assignments",       assignment_extractor.extract_permission_set_assignments)
+    group_members                    = _run("group members",                    assignment_extractor.extract_group_members)
+    permission_set_group_assignments = _run("permission set group assignments", assignment_extractor.extract_permission_set_group_assignments)
+    record_owners                    = _run("record owners",                    lambda: assignment_extractor.extract_record_owners(sobjects))
 
     # -----------------------------
     # Hydrate missing Profiles (best effort)

@@ -48,6 +48,7 @@ pip install -r requirements.txt
 ```
 
 ### 2. Create a Salesforce Connected App
+#### certificate_and_secret method:
 
 SalesforceHound authenticates via the JWT OAuth flow. You will need to create a Connected App and a certificate.
 
@@ -60,11 +61,28 @@ openssl req -new -x509 -key salesforce_jwt.key -out salesforce_jwt.crt -days 365
 
 **Create the Connected App:**
 
-1. **Setup → App Manager → New Connected App**
-2. Enable OAuth Settings, set Callback URL to `https://login.salesforce.com/services/oauth2/callback`
+1. **Setup → Apps → App Manager → External Client Apps → External Client App Manager → New External Client App**
+2. Enable OAuth Settings, set Callback URL to `https:/localhost`
 3. Enable "Use digital signatures" and upload `salesforce_jwt.crt`
 4. Add OAuth Scopes: `api`, `refresh_token, offline_access`
-5. Save and wait 2–10 minutes for changes to propagate
+5. Make sure to export you Consumer Key and Secret!
+6. Save and wait 2–10 minutes for changes to propagate
+
+**Pre-authorize your integration user:**
+
+1. **Setup → Connected Apps → Manage Connected Apps → SalesforceHound → Edit Policies**
+2. Set Permitted Users to `Admin approved users are pre-authorized`
+3. Add your integration user's Profile or Permission Set under **Manage Profiles** / **Manage Permission Sets**
+
+#### client_credential_flow method:
+
+**Create the Connected App:**
+
+1. **Setup → Apps → App Manager → External Client Apps → External Client App Manager → New External Client App**
+2. Enable OAuth Settings, set Callback URL to `https:/localhost`
+4. Add OAuth Scopes: `api`, `refresh_token, offline_access`
+5. Make sure to export you Consumer Key and Secret!
+6. Save and wait 2–10 minutes for changes to propagate
 
 **Pre-authorize your integration user:**
 
