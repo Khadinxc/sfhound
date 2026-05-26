@@ -213,10 +213,10 @@ def verify_pagination(token: str, instance_url: str, api_version: str,
     """
     print(f"\n[*] Verifying pagination (page size: {page_size}) ...")
     soql = (  # nosec B608
-        f"SELECT Id, Name FROM PermissionSet "
-        f"WHERE Name LIKE '{TEST_PREFIX}%' "
-        f"ORDER BY Name"
-    )
+        f"SELECT Id, Name FROM PermissionSet " # nosec B608
+        f"WHERE Name LIKE '{TEST_PREFIX}%' " # nosec B608
+        f"ORDER BY Name" # nosec B608
+    ) # nosec B608
     print(f"[*] SOQL: {soql}")
     records = _soql(token, instance_url, api_version, soql, page_size=page_size)
     print(f"\n[+] Pagination complete — retrieved {len(records)} records across all pages.")
