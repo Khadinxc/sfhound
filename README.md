@@ -866,6 +866,40 @@ this program. If not, see https://www.gnu.org/licenses/.
 
 ## Release Notes
 
+## sfhound v2.0.1
+
+### Bug fixes and improvements
+
+#### Fixed: `--throttle` now controls page size, not record cap
+Previously, `-r`/`--throttle <n>` appended `LIMIT <n>` to every SOQL query and disabled `queryMore()` pagination entirely. This meant only the first `<n>` records were ever returned, making the flag unusable for large orgs.
+
+`--throttle` now sets the `Sforce-Query-Options: batchSize=<n>` HTTP header, which controls how many records Salesforce returns **per page**. Full `queryMore()` pagination is always followed, so all records are retrieved regardless of org size. The flag is now genuinely useful for reducing per-request payload on large orgs without dropping data.
+
+```bash
+sfhound --throttle 200    # fetch all records in pages of 200
+sfhound --throttle 500    # fetch all records in pages of 500
+```
+
+#### Fixed: `EntityDefinition` no longer raises `EXCEEDED_ID_LIMIT`
+`EntityDefinition` (used for SObject metadata) is a Salesforce virtual object that does not support cursor-based `queryMore()` pagination. Querying it without a `LIMIT` clause on large orgs previously caused an `EXCEEDED_ID_LIMIT` API error.
+
+The extractor now uses `LIMIT + OFFSET` iteration for `EntityDefinition`, which is the correct workaround for non-`queryMore` objects. Page size respects `--throttle` when set, otherwise defaults to 2000 (Salesforce's maximum).
+
+#### CI/CD: eliminated duplicate pipeline steps
+The `lint` and `security` jobs were defined independently in both `ci.yml` and `release.yml`. They are now defined once in a reusable `_checks.yml` workflow called by both pipelines, ensuring checks are consistent and maintained in a single place.
+
+#### New: bulk test data script (`examples/create_test_data.py`)
+A utility script for verifying pagination against a live Salesforce org. Creates a configurable number of `PermissionSet` records (default 250, spanning multiple pages at 200/page), queries them back page-by-page with verbose output, then cleans up.
+
+```bash
+python -m examples.create_test_data --config path/to/config.yaml           # create 250 records
+python -m examples.create_test_data --config path/to/config.yaml --verify  # verify pagination
+python -m examples.create_test_data --config path/to/config.yaml --cleanup # delete test records
+```
+
+#### pytest now always shows skip reasons
+`addopts = "-rs"` added to `[tool.pytest.ini_options]` in `pyproject.toml` so skipped tests always report their reason without requiring `-v`.
+
 ## sfhound v2.0
 
 ### What's new
