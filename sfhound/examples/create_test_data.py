@@ -212,11 +212,7 @@ def verify_pagination(token: str, instance_url: str, api_version: str,
     the total matches what exists in the org.
     """
     print(f"\n[*] Verifying pagination (page size: {page_size}) ...")
-    soql = (  # nosec B608
-        f"SELECT Id, Name FROM PermissionSet " # nosec B608
-        f"WHERE Name LIKE '{TEST_PREFIX}%' " # nosec B608
-        f"ORDER BY Name" # nosec B608
-    ) # nosec B608
+    soql = f"SELECT Id, Name FROM PermissionSet WHERE Name LIKE '{TEST_PREFIX}%' ORDER BY Name"  # nosec B608
     print(f"[*] SOQL: {soql}")
     records = _soql(token, instance_url, api_version, soql, page_size=page_size)
     print(f"\n[+] Pagination complete — retrieved {len(records)} records across all pages.")
@@ -228,10 +224,7 @@ def verify_pagination(token: str, instance_url: str, api_version: str,
 def cleanup(token: str, instance_url: str, api_version: str) -> None:
     """Delete all PermissionSets whose Name starts with TEST_PREFIX."""
     print(f"\n[*] Querying test records to delete (prefix: '{TEST_PREFIX}') ...")
-    soql = (  # nosec B608
-        f"SELECT Id, Name FROM PermissionSet "
-        f"WHERE Name LIKE '{TEST_PREFIX}%'"
-    )
+    soql = f"SELECT Id, Name FROM PermissionSet WHERE Name LIKE '{TEST_PREFIX}%'"  # nosec B608
     records = _soql(token, instance_url, api_version, soql)
     if not records:
         print("[+] No test records found — nothing to delete.")
