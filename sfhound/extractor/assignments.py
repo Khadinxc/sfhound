@@ -8,12 +8,10 @@ class AssignmentExtractor:
         self.throttle = throttle
 
     def query(self, soql):
-        soql_upper = soql.upper()
-        if self.throttle is not None and 'LIMIT' not in soql_upper and 'GROUP BY' not in soql_upper:
-            soql = soql.rstrip() + f" LIMIT {self.throttle}"
-
         access_token, instance_url = self.auth.access_token, self.auth.instance_url
         headers = {"Authorization": f"Bearer {access_token}"}
+        if self.throttle is not None:
+            headers["Sforce-Query-Options"] = f"batchSize={self.throttle}"
 
         url = f"{instance_url}/services/data/{self.api_version}/query"
         params = {"q": soql}
@@ -32,9 +30,6 @@ class AssignmentExtractor:
                 total_size = data.get("totalSize")
 
             all_records.extend(data.get("records", []))
-
-            if self.throttle is not None:
-                break  # single-page mode: do not follow nextRecordsUrl
 
             if data.get("done") is True:
                 break

@@ -143,7 +143,7 @@ Examples:
   # Override credentials
   sfhound --client-id YOUR_ID --username user@example.com
 
-  # Throttled mode for large orgs
+  # Large orgs: fetch 200 records per page, paginate until all records retrieved
   sfhound --throttle 200 -v
 
   # Sandbox org
@@ -195,9 +195,10 @@ Valid --scope values: {', '.join(sorted(VALID_SCOPES))}
         const=200,
         type=int,
         default=None,
-        metavar="LIMIT",
-        help="Throttled mode: fetch one page per query without queryMore(). "
-             "Appends LIMIT <n> to all SOQL queries (default 200 when -r is given without a value).",
+        metavar="BATCH_SIZE",
+        help="Set the number of records fetched per API request (Sforce-Query-Options batchSize). "
+             "All pages are still retrieved so no records are dropped. "
+             "Use this to reduce per-request payload for large orgs (default 200 when -r is given without a value).",
     )
     extract_group.add_argument(
         "-v", "--verbose",
@@ -510,7 +511,7 @@ def main():
     auth.authenticate()
 
     if throttle is not None:
-        print(f"[~] Throttled mode enabled: LIMIT {throttle} per query, queryMore() disabled")
+        print(f"[~] Batch size set to {throttle} records per request (queryMore() enabled, all records will be retrieved)")
     if active_scopes:
         print(f"[~] Scope mode: {', '.join(sorted(active_scopes))}")
 

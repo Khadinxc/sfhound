@@ -53,6 +53,7 @@ sfhound = ["config.yaml.example"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-rs"
 # Per-test timeout (seconds).  Increase for slow orgs or large graphs.
 timeout = 600
 markers = [
