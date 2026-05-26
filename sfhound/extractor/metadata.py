@@ -57,34 +57,43 @@ class MetadataExtractor:
 
     def query(self, soql: str) -> Dict[str, Any]:
         """
-        SOQL query with pagination.
-        Returns: {"records": [...]} (flattened across pages)
+        SOQL query with full pagination (queryMore).
+        Returns: {"records": [...]} (flattened across all pages)
 
-        If throttle is set, appends LIMIT <n> and fetches a single page only.
-        GROUP BY queries are never given a LIMIT (SOQL does not support it).
+        If throttle is set, uses Sforce-Query-Options: batchSize=<n> to control
+        how many records are returned per page. All pages are still fetched so
+        no records are dropped regardless of org size.
+
+        NOTE: Do not use this for objects that do not support queryMore()
+        (e.g. EntityDefinition). Use _query_offset_paginated() for those.
         """
-        soql_upper = soql.upper()
-        if self.throttle is not None and 'LIMIT' not in soql_upper and 'GROUP BY' not in soql_upper:
-            soql = soql.rstrip() + f" LIMIT {self.throttle}"
-
         instance_url = self.auth.instance_url
         headers = self._headers()
+        if self.throttle is not None:
+            headers["Sforce-Query-Options"] = f"batchSize={self.throttle}"
 
         url = f"{instance_url}/services/data/{self.api_version}/query"
         params = {"q": soql}
 
         all_records: List[Dict[str, Any]] = []
+        first_page = True
 
         while True:
             r = requests.get(url, headers=headers, params=params, timeout=30)
             if r.status_code != 200:
-                raise Exception(f"SOQL query failed ({r.status_code}): {r.text}")
+                body = r.text
+                # Provide an actionable message for objects that forbid queryMore().
+                if not first_page and "EXCEEDED_ID_LIMIT" in body:
+                    raise Exception(
+                        f"SOQL queryMore() failed with EXCEEDED_ID_LIMIT ({r.status_code}). "
+                        "This object does not support cursor-based pagination. "
+                        "Use _query_offset_paginated() instead."
+                    )
+                raise Exception(f"SOQL query failed ({r.status_code}): {body}")
 
+            first_page = False
             data = r.json()
             all_records.extend(data.get("records", []))
-
-            if self.throttle is not None:
-                break  # single-page mode: do not follow nextRecordsUrl
 
             if data.get("done") is True:
                 break
@@ -95,6 +104,43 @@ class MetadataExtractor:
 
             url = f"{instance_url}{next_url}"
             params = None  # nextRecordsUrl already includes locator
+
+        return {"records": all_records}
+
+    def _query_offset_paginated(self, soql: str) -> Dict[str, Any]:
+        """
+        SOQL pagination via LIMIT + OFFSET for objects that do not support
+        queryMore() (e.g. EntityDefinition, FieldDefinition).
+
+        Page size is self.throttle when set, otherwise 2000 (Salesforce max).
+        Salesforce caps OFFSET at 2000, so the maximum retrievable row count
+        through this method is 4000 (last valid OFFSET 2000 + up to 2000 rows).
+        In practice EntityDefinition result sets are well within this bound
+        after the IsDeprecatedAndHidden = false filter is applied.
+        """
+        page_size = self.throttle if self.throttle is not None else 2000
+        instance_url = self.auth.instance_url
+        headers = self._headers()
+
+        all_records: List[Dict[str, Any]] = []
+        offset = 0
+
+        while True:
+            paginated_soql = soql.rstrip() + f" LIMIT {page_size} OFFSET {offset}"
+            url = f"{instance_url}/services/data/{self.api_version}/query"
+            params = {"q": paginated_soql}
+
+            r = requests.get(url, headers=headers, params=params, timeout=30)
+            if r.status_code != 200:
+                raise Exception(f"SOQL offset query failed ({r.status_code}): {r.text}")
+
+            page = r.json().get("records", [])
+            all_records.extend(page)
+
+            if len(page) < page_size:
+                break
+
+            offset += page_size
 
         return {"records": all_records}
 
@@ -442,7 +488,8 @@ class MetadataExtractor:
         FROM EntityDefinition
         WHERE IsDeprecatedAndHidden = false
         """
-        return self.query(soql)
+        # EntityDefinition does not support queryMore() — use OFFSET pagination.
+        return self._query_offset_paginated(soql)
 
     def extract_object_permissions(self):
         """
