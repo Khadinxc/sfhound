@@ -202,7 +202,7 @@ def create_records(token: str, instance_url: str, api_version: str, count: int) 
         print(f"    Batch {b + 1}/{batches}: created {len(created)} records")
 
     print(f"[+] Done — {total_created}/{count} PermissionSets created.")
-    print(f"[!] Run with --cleanup when finished to remove them.")
+    print("[!] Run with --cleanup when finished to remove them.")
 
 
 def verify_pagination(token: str, instance_url: str, api_version: str,
