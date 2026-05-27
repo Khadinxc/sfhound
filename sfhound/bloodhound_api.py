@@ -219,108 +219,127 @@ class BloodHoundAPI:
                 print('Upload aborted due to OpenGraph JSON validation errors.')
                 return
 
-            # ------------------------------------------------------------------
-            # Step 1: Start upload job
-            # ------------------------------------------------------------------
-            r = s.post(f'{base}/api/v2/file-upload/start', timeout=10)
-            if r.status_code not in (200, 201):
-                print(f'Failed to start file upload job: {r.status_code} {r.text}')
-                return
-            job_id = (r.json().get('id') or
-                      (r.json().get('data') or {}).get('id'))
-            if not job_id:
-                print('No file upload job id returned.')
-                return
-            print(f'[*] Upload job created: {job_id}')
+            # BH CE cancels the very first upload job after a clear_database()
+            # call due to an internal post-reset transient.  We retry once when
+            # a job ends with Canceled + zero ingested files.
+            _final_status = None
+            for _attempt in range(2):
+                if _attempt:
+                    print('[*] Retrying upload (BH CE post-clear transient — attempt 2)...')
 
-            # ------------------------------------------------------------------
-            # Step 2: Upload file bytes
-            # ------------------------------------------------------------------
-            file_name = os.path.basename(graph_path)
-            print(f'[*] Uploading {file_name} ...')
-            with open(graph_path, 'rb') as f:
-                file_bytes = f.read()
-            upload_headers = {
-                'Content-Type': 'application/json',
-                'Prefer': 'wait=30',
-                'X-File-Upload-Name': file_name,
-            }
-            r = s.post(f'{base}/api/v2/file-upload/{job_id}',
-                       data=file_bytes, headers=upload_headers, timeout=300)
-            if r.status_code not in (200, 201, 202):
-                print(f'Failed to upload graph: {r.status_code} {r.text}')
-                return
-            print('[+] File uploaded successfully')
+                # --------------------------------------------------------------
+                # Step 1: Start upload job
+                # --------------------------------------------------------------
+                r = s.post(f'{base}/api/v2/file-upload/start', timeout=10)
+                if r.status_code not in (200, 201):
+                    print(f'Failed to start file upload job: {r.status_code} {r.text}')
+                    return
+                job_id = (r.json().get('id') or
+                          (r.json().get('data') or {}).get('id'))
+                if not job_id:
+                    print('No file upload job id returned.')
+                    return
+                print(f'[*] Upload job created: {job_id}')
 
-            # ------------------------------------------------------------------
-            # Step 3: Verify job is Running, then end it (triggers ingestion)
-            # ------------------------------------------------------------------
-            r = s.get(f'{base}/api/v2/file-upload',
-                      params={'id': f'eq:{job_id}'}, timeout=10)
-            if r.status_code == 200:
-                jobs = r.json().get('data') or []
-                job = next((j for j in jobs if j.get('id') == job_id), None)
-                if job:
-                    status = job.get('status')
-                    if status != 1:  # must be Running
-                        label = _JOB_STATUS.get(status, str(status))
-                        print(f'[!] Job {job_id} is in state \'{label}\' — expected Running. Aborting.')
-                        return
+                # --------------------------------------------------------------
+                # Step 2: Upload file bytes
+                # --------------------------------------------------------------
+                file_name = os.path.basename(graph_path)
+                print(f'[*] Uploading {file_name} ...')
+                with open(graph_path, 'rb') as f:
+                    file_bytes = f.read()
+                upload_headers = {
+                    'Content-Type': 'application/json',
+                    'Prefer': 'wait=30',
+                    'X-File-Upload-Name': file_name,
+                }
+                r = s.post(f'{base}/api/v2/file-upload/{job_id}',
+                           data=file_bytes, headers=upload_headers, timeout=300)
+                if r.status_code not in (200, 201, 202):
+                    print(f'Failed to upload graph: {r.status_code} {r.text}')
+                    return
+                print('[+] File uploaded successfully')
 
-            r = s.post(f'{base}/api/v2/file-upload/{job_id}/end', timeout=30)
-            if r.status_code not in (200, 201):
-                print(f'Failed to end upload job: {r.status_code} {r.text}')
-                return
-            print('[+] Ingestion started')
-
-            # ------------------------------------------------------------------
-            # Step 4: Poll until terminal state
-            # ------------------------------------------------------------------
-            print(f'[*] Polling job {job_id} every {poll_interval}s (timeout {timeout}s)...')
-            deadline = time.time() + timeout
-            while time.time() < deadline:
+                # --------------------------------------------------------------
+                # Step 3: Verify job is Running, then end it (triggers ingestion)
+                # --------------------------------------------------------------
                 r = s.get(f'{base}/api/v2/file-upload',
-                          params={'id': f'eq:{job_id}'}, timeout=30)
-                if r.status_code != 200:
+                          params={'id': f'eq:{job_id}'}, timeout=10)
+                if r.status_code == 200:
+                    jobs = r.json().get('data') or []
+                    job = next((j for j in jobs if j.get('id') == job_id), None)
+                    if job:
+                        status = job.get('status')
+                        if status != 1:  # must be Running
+                            label = _JOB_STATUS.get(status, str(status))
+                            print(f'[!] Job {job_id} is in state \'{label}\' — expected Running. Aborting.')
+                            return
+
+                r = s.post(f'{base}/api/v2/file-upload/{job_id}/end', timeout=30)
+                if r.status_code not in (200, 201, 202):
+                    print(f'Failed to end upload job: {r.status_code} {r.text}')
+                    return
+                print('[+] Ingestion started')
+
+                # --------------------------------------------------------------
+                # Step 4: Poll until terminal state
+                # --------------------------------------------------------------
+                print(f'[*] Polling job {job_id} every {poll_interval}s (timeout {timeout}s)...')
+                _canceled_empty = False
+                deadline = time.time() + timeout
+                while time.time() < deadline:
+                    r = s.get(f'{base}/api/v2/file-upload',
+                              params={'id': f'eq:{job_id}'}, timeout=30)
+                    if r.status_code != 200:
+                        time.sleep(poll_interval)
+                        continue
+                    jobs = r.json().get('data') or []
+                    job = next((j for j in jobs if j.get('id') == job_id), None)
+                    if not job:
+                        time.sleep(poll_interval)
+                        continue
+                    status  = job.get('status')
+                    label   = _JOB_STATUS.get(status, f'Unknown({status})')
+                    total   = job.get('total_files', '?')
+                    failed  = job.get('failed_files', 0)
+                    partial = job.get('partial_failed_files', 0)
+                    msg     = job.get('status_message', '')
+                    print(f'    [{label}] total={total} failed={failed} partial={partial}'
+                          + (f' — {msg}' if msg else ''))
+                    if status in _TERMINAL_STATES:
+                        _final_status = status
+                        if status in _SUCCESS_STATES:
+                            print(f'[+] Ingestion complete: {label}')
+                        elif status == 3 and total == 0 and _attempt == 0:
+                            # BH CE post-clear transient: first job always canceled
+                            print(f'[!] Job {job_id} Canceled with zero ingested files'
+                                  ' — BH CE post-clear transient; will retry.')
+                            _canceled_empty = True
+                        else:
+                            print(f'[!] Ingestion ended with status: {label}')
+                        break
                     time.sleep(poll_interval)
-                    continue
-                jobs = r.json().get('data') or []
-                job = next((j for j in jobs if j.get('id') == job_id), None)
-                if not job:
-                    time.sleep(poll_interval)
-                    continue
-                status  = job.get('status')
-                label   = _JOB_STATUS.get(status, f'Unknown({status})')
-                total   = job.get('total_files', '?')
-                failed  = job.get('failed_files', 0)
-                partial = job.get('partial_failed_files', 0)
-                msg     = job.get('status_message', '')
-                print(f'    [{label}] total={total} failed={failed} partial={partial}'
-                      + (f' — {msg}' if msg else ''))
-                if status in _TERMINAL_STATES:
-                    if status in _SUCCESS_STATES:
-                        print(f'[+] Ingestion complete: {label}')
-                    else:
-                        print(f'[!] Ingestion ended with status: {label}')
-                    break
-                time.sleep(poll_interval)
-            else:
-                print(f'[!] Timed out waiting for job {job_id} after {timeout}s')
-                return
+                else:
+                    print(f'[!] Timed out waiting for job {job_id} after {timeout}s')
+                    return
+
+                if not _canceled_empty:
+                    break  # success or permanent failure — do not retry
 
             # ------------------------------------------------------------------
             # Step 5: Print completed task details
             # ------------------------------------------------------------------
-            r = s.get(f'{base}/api/v2/file-upload/{job_id}/completed-tasks', timeout=30)
-            if r.status_code == 200:
-                tasks = r.json().get('data') or []
-                if tasks:
-                    print('[+] Completed tasks:')
-                    print(json.dumps(tasks, indent=2))
+            if _final_status in _SUCCESS_STATES:
+                r = s.get(f'{base}/api/v2/file-upload/{job_id}/completed-tasks', timeout=30)
+                if r.status_code == 200:
+                    tasks = r.json().get('data') or []
+                    if tasks:
+                        print('[+] Completed tasks:')
+                        print(json.dumps(tasks, indent=2))
+                    else:
+                        print('[*] No completed task records available')
                 else:
-                    print('[*] No completed task records available')
-            else:
-                print(f'[!] Could not retrieve completed tasks (HTTP {r.status_code})')
+                    print(f'[!] Could not retrieve completed tasks (HTTP {r.status_code})')
 
         def cypher_query(self, query: str, include_properties: bool = True):
             """
