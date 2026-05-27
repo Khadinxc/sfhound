@@ -265,6 +265,94 @@ def test_multi_scope(run_sfhound, tmp_output):
         )
 
 
+def test_scope_all_matches_explicit_scopes(run_sfhound, tmp_path):
+    """
+    ``-s all`` must produce identical graph content to an equivalent run that
+    lists every scope explicitly.
+
+    Strategy
+    --------
+    1. Run sfhound with ``-s all`` → produces one JSON file per scope.
+    2. Run sfhound with every scope listed explicitly → same file-per-scope
+       output.
+    3. For each scope, compare the sets of node IDs and edge fingerprints
+       (start id, end id, edge kind) between the two runs.  Timestamps,
+       ordering, and property values are excluded from the diff so that
+       minor clock-skew between the two API calls cannot cause a false failure.
+    """
+    all_dir = tmp_path / "all"
+    explicit_dir = tmp_path / "explicit"
+    all_dir.mkdir()
+    explicit_dir.mkdir()
+
+    all_scopes_csv = ",".join(sorted(SCOPE_EXPECTED_KINDS))
+
+    result_all = run_sfhound("--scope", "all", "--output-path", str(all_dir))
+    assert result_all.returncode == 0, (
+        f"`sfhound -s all` failed (rc={result_all.returncode}).\n"
+        f"STDOUT:\n{result_all.stdout}\nSTDERR:\n{result_all.stderr}"
+    )
+
+    result_explicit = run_sfhound(
+        "--scope", all_scopes_csv, "--output-path", str(explicit_dir)
+    )
+    assert result_explicit.returncode == 0, (
+        f"`sfhound -s {all_scopes_csv}` failed (rc={result_explicit.returncode}).\n"
+        f"STDOUT:\n{result_explicit.stdout}\nSTDERR:\n{result_explicit.stderr}"
+    )
+
+    def _scope_suffix(path: Path) -> str:
+        """Extract the scope name from a filename like *_users.json."""
+        return path.stem.rsplit("_", 1)[-1]
+
+    def _node_ids(data: dict) -> set:
+        return {node["id"] for node in data.get("graph", {}).get("nodes", [])}
+
+    def _edge_fingerprints(data: dict) -> set:
+        result = set()
+        for edge in data.get("graph", {}).get("edges", []):
+            start = edge.get("start")
+            end = edge.get("end")
+            # bhopengraph serialises start/end as {"value": "<id>", "match_by": "id"}
+            start_id = start["value"] if isinstance(start, dict) else start
+            end_id = end["value"] if isinstance(end, dict) else end
+            kind = edge.get("kind") or edge.get("type")
+            result.add((start_id, end_id, kind))
+        return result
+
+    all_files = {_scope_suffix(p): p for p in _find_json(all_dir)}
+    explicit_files = {_scope_suffix(p): p for p in _find_json(explicit_dir)}
+
+    assert all_files, "`-s all` produced no JSON output files."
+    assert explicit_files, f"`-s {all_scopes_csv}` produced no JSON output files."
+
+    assert set(all_files) == set(explicit_files), (
+        f"Scope file mismatch.\n"
+        f"  Only in `-s all`:      {sorted(set(all_files) - set(explicit_files))}\n"
+        f"  Only in explicit run:  {sorted(set(explicit_files) - set(all_files))}"
+    )
+
+    for scope in sorted(all_files):
+        all_data = _load_json(all_files[scope])
+        explicit_data = _load_json(explicit_files[scope])
+
+        all_nodes = _node_ids(all_data)
+        explicit_nodes = _node_ids(explicit_data)
+        assert all_nodes == explicit_nodes, (
+            f"Scope '{scope}': node ID mismatch between `-s all` and explicit run.\n"
+            f"  Only in `-s all`:     {sorted(all_nodes - explicit_nodes)}\n"
+            f"  Only in explicit run: {sorted(explicit_nodes - all_nodes)}"
+        )
+
+        all_edges = _edge_fingerprints(all_data)
+        explicit_edges = _edge_fingerprints(explicit_data)
+        assert all_edges == explicit_edges, (
+            f"Scope '{scope}': edge mismatch between `-s all` and explicit run.\n"
+            f"  Only in `-s all`:     {sorted(all_edges - explicit_edges)}\n"
+            f"  Only in explicit run: {sorted(explicit_edges - all_edges)}"
+        )
+
+
 def test_auto_ingest(run_sfhound, tmp_output, bh_api):
     """
     --auto-ingest must perform a full extraction, write the output file, and

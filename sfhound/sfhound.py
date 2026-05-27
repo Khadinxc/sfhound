@@ -70,7 +70,7 @@ SCOPE_ASSIGNMENT_EXTRACTORS = {
     "permissionsets": frozenset(["extract_permission_set_assignments",
                                   "extract_permission_set_group_assignments"]),
     "roles":          frozenset(),
-    "connectedapps":  frozenset(),
+    "connectedapps":  frozenset(["extract_users"]),
     "objects":        frozenset(),
     "fields":         frozenset(),
 }
@@ -139,6 +139,7 @@ Examples:
   # Selective collection — one file per scope
   sfhound -s users,groups
   sfhound -s objects,profiles,permissionsets
+  sfhound -s all
 
   # Override credentials
   sfhound --client-id YOUR_ID --username user@example.com
@@ -186,7 +187,8 @@ Valid --scope values: {', '.join(sorted(VALID_SCOPES))}
             "Collect only the specified node type(s) and write one file per scope. "
             "Without this flag all data is collected into a single output file. "
             f"Valid values (comma-separated): {', '.join(sorted(VALID_SCOPES))}. "
-            "Example: -s users,groups,profiles"
+            "Use 'all' to collect every scope individually. "
+            "Example: -s users,groups,profiles  or  -s all"
         ),
     )
     extract_group.add_argument(
@@ -416,6 +418,8 @@ def _parse_scopes(scope_arg):
     """Parse and validate the --scope argument. Returns frozenset or None."""
     if not scope_arg:
         return None
+    if scope_arg.strip().lower() == "all":
+        return frozenset(VALID_SCOPES)
     requested = frozenset(s.strip().lower() for s in scope_arg.split(",") if s.strip())
     unknown = requested - VALID_SCOPES
     if unknown:
@@ -455,7 +459,14 @@ def _export_scope(scope, graph, scope_edges, base_dir, org_subdomain, timestamp)
     for node_id, node in graph.nodes.items():
         if any(k in scope_kind_set for k in node.kinds):
             scoped_graph.add_node_without_validation(node)
+    # Include any nodes referenced by scope edges that aren't already in the
+    # scoped graph.  This ensures every edge has both endpoints present in the
+    # exported file, preventing BloodHound CE from cancelling the ingestion job
+    # when a scope's edges reference nodes owned by a different scope.
     for edge in scope_edges:
+        for endpoint_id in (edge.start_node, edge.end_node):
+            if endpoint_id not in scoped_graph.nodes and endpoint_id in graph.nodes:
+                scoped_graph.add_node_without_validation(graph.nodes[endpoint_id])
         scoped_graph.add_edge_without_validation(edge)
     output_path = os.path.join(base_dir, f"{org_subdomain}_{timestamp}_{scope}.json")
     scoped_graph.export_to_file(output_path, include_metadata=False, indent=2)

@@ -6,6 +6,7 @@ Salesforce-Documentation
 salesforce-opengraph/config.yaml
 salesforce-opengraph/sfscan.pem
 sf-opengraph/config.yaml
+sfhound/config.yaml
 sf-opengraph/sfscan.pem
 .github/prompts
 *\__pycache__

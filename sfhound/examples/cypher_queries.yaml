@@ -439,12 +439,13 @@ queries:
   - name: "Connected Apps - Admin Who Created the Most Apps"
     category: "connected_apps"
     description: >
-      Ranks admins by the number of Connected Apps they created. Returns a
-      table — use BloodHound's Table view to read the results.
+      Returns admin users ordered by the number of Connected Apps they created,
+      highest count first.
     query: |
       MATCH (app:SFConnectedApp)-[:SF_CreatedBy]->(u:SFUser)
-      RETURN u.name AS Admin, count(app) AS AppCount
+      WITH u, count(app) AS AppCount
       ORDER BY AppCount DESC
+      RETURN u
 
   - name: "Connected Apps - Profiles and Permission Sets That Can Authorize"
     category: "connected_apps"
