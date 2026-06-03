@@ -18,3 +18,4 @@ test_output/
 .pytest_cache
 *.egg-info/
 docs
+sf-opengraph/examples/config.yaml
