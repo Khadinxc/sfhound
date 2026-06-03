@@ -163,11 +163,11 @@ class AssignmentExtractor:
             cols = "Id, GroupId, UserOrGroupId, SystemModstamp"
             # Salesforce does not allow LIKE on ID fields, so we use a semi-join against
             # Group to retrieve group-in-group memberships instead of a prefix pattern.
-            group_result = self.query(  # nosec B608
-                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN (SELECT Id FROM Group)"
+            group_result = self.query(
+                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN (SELECT Id FROM Group)"  # nosec B608
             )
-            user_result = self.query(  # nosec B608
-                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN ({user_sub})"
+            user_result = self.query(
+                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN ({user_sub})"  # nosec B608
             )
             seen: set[str] = set()
             merged: list = []
@@ -179,7 +179,7 @@ class AssignmentExtractor:
                 "records": merged,
                 "totalSize": len(merged),
                 "done": True,
-                "soql": f"(merged: group members + filtered users)",
+                "soql": "(merged: group members + filtered users)",
             }
         else:
             soql = """
