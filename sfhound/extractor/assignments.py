@@ -2,10 +2,13 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 
 class AssignmentExtractor:
-    def __init__(self, auth, throttle=None):
+    def __init__(self, auth, throttle=None, user_types=None, exclude_username_pattern=None):
         self.auth = auth
         self.api_version = auth.config.get('api_version', 'v56.0')
         self.throttle = throttle
+        # Optional user-scoping filters
+        self.user_types = user_types  # list[str] or None
+        self.exclude_username_pattern = exclude_username_pattern  # str or None
 
     def query(self, soql):
         access_token, instance_url = self.auth.access_token, self.auth.instance_url
@@ -49,11 +52,53 @@ class AssignmentExtractor:
         }
 
     # ---------------------------------------
+    # HELPERS
+    # ---------------------------------------
+
+    def _user_filter_conditions(self) -> list[str]:
+        """Return validated SOQL WHERE conditions that mirror the user-scoping filters."""
+        conditions: list[str] = []
+        if self.user_types:
+            safe_types = []
+            for t in self.user_types:
+                t = t.strip()
+                if not t.replace("_", "").isalnum():
+                    raise ValueError(
+                        f"Invalid UserType value '{t}': only alphanumeric characters "
+                        "and underscores are allowed."
+                    )
+                safe_types.append(t)
+            quoted = ", ".join(f"'{v}'" for v in safe_types)
+            conditions.append(f"UserType IN ({quoted})")  # nosec B608
+        if self.exclude_username_pattern:
+            pattern = self.exclude_username_pattern
+            if "'" in pattern:
+                raise ValueError(
+                    "exclude_username_pattern must not contain single quotes."
+                )
+            conditions.append(f"Username NOT LIKE '{pattern}'")  # nosec B608
+        return conditions
+
+    def _user_subquery(self) -> str:
+        """
+        Return a SOQL subquery string ``SELECT Id FROM User WHERE ...`` that reflects
+        the active user-scoping filters, or an empty string when no filters are set.
+        """
+        conditions = self._user_filter_conditions()
+        if not conditions:
+            return ""
+        where = " AND ".join(conditions)
+        return f"SELECT Id FROM User WHERE {where}"  # nosec B608
+
+    # ---------------------------------------
     # THESE are the extractor functions
     # ---------------------------------------
 
     def extract_users(self):
-        soql = """
+        conditions = self._user_filter_conditions()
+        where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+        soql = f"""
         SELECT
             Id,
             Name,
@@ -84,11 +129,14 @@ class AssignmentExtractor:
             CreatedDate,
             LastModifiedDate
         FROM User
-        """
+        {where_clause}
+        """  # nosec B608
         return self.query(soql)
 
     def extract_permission_set_assignments(self):
-        soql = """
+        user_sub = self._user_subquery()
+        assignee_filter = f"WHERE AssigneeId IN ({user_sub})" if user_sub else ""  # nosec B608
+        soql = f"""
         SELECT
         Id,
         AssigneeId,
@@ -99,12 +147,42 @@ class AssignmentExtractor:
         IsActive,
         SystemModstamp
         FROM PermissionSetAssignment
-        """
+        {assignee_filter}
+        """  # nosec B608
         return self.query(soql)
 
 
     def extract_group_members(self):
-        soql = """
+        user_sub = self._user_subquery()
+        # UserOrGroupId may be a User (005...) or a Group (00G...). When a user filter is
+        # active, Salesforce does not allow OR combined with a semi-join subselect, so we
+        # run two separate queries and merge the results:
+        #   1. group-in-group memberships (UserOrGroupId is a Group, not a User)
+        #   2. user memberships restricted to the filtered user set
+        if user_sub:
+            cols = "Id, GroupId, UserOrGroupId, SystemModstamp"
+            # Salesforce does not allow LIKE on ID fields, so we use a semi-join against
+            # Group to retrieve group-in-group memberships instead of a prefix pattern.
+            group_result = self.query(
+                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN (SELECT Id FROM Group)"  # nosec B608
+            )
+            user_result = self.query(
+                f"SELECT {cols} FROM GroupMember WHERE UserOrGroupId IN ({user_sub})"  # nosec B608
+            )
+            seen: set[str] = set()
+            merged: list = []
+            for row in group_result["records"] + user_result["records"]:
+                if row["Id"] not in seen:
+                    seen.add(row["Id"])
+                    merged.append(row)
+            return {
+                "records": merged,
+                "totalSize": len(merged),
+                "done": True,
+                "soql": "(merged: group members + filtered users)",
+            }
+        else:
+            soql = """
         SELECT
             Id,
             GroupId,
@@ -112,7 +190,7 @@ class AssignmentExtractor:
             SystemModstamp
         FROM GroupMember
         """
-        return self.query(soql)
+            return self.query(soql)
     
     def extract_permission_set_groups(self) -> dict[str, any]:
         soql = """
@@ -130,7 +208,9 @@ class AssignmentExtractor:
         return self.query(soql)
     
     def extract_permission_set_group_assignments(self):
-        soql = """
+        user_sub = self._user_subquery()
+        assignee_filter = f"AND AssigneeId IN ({user_sub})" if user_sub else ""  # nosec B608
+        soql = f"""
         SELECT
             Id,
             AssigneeId,
@@ -138,7 +218,8 @@ class AssignmentExtractor:
             SystemModstamp
         FROM PermissionSetAssignment
         WHERE PermissionSetGroupId != null
-        """
+        {assignee_filter}
+        """  # nosec B608
         return self.query(soql)
 
     def extract_record_owners(self, sobjects_data: dict) -> list:
@@ -161,11 +242,14 @@ class AssignmentExtractor:
             and obj.get("IsQueryable")
         ]
 
+        user_sub = self._user_subquery()
+        owner_filter = f" WHERE OwnerId IN ({user_sub})" if user_sub else ""  # nosec B608
+
         def _query_object(obj):
             api_name = obj.get("QualifiedApiName", "")
             durable_id = obj.get("DurableId") or api_name
             try:
-                soql = f"SELECT OwnerId FROM {api_name} GROUP BY OwnerId"  # nosec B608
+                soql = f"SELECT OwnerId FROM {api_name}{owner_filter} GROUP BY OwnerId"  # nosec B608
                 batch = self.query(soql)
                 return [
                     {"OwnerId": r["OwnerId"], "SobjectType": api_name, "SobjectDurableId": durable_id}

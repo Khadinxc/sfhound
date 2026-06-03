@@ -220,6 +220,23 @@ Valid --scope values: {', '.join(sorted(VALID_SCOPES))}
              "Comma-separated field API names to collect only those fields "
              "(e.g. -f Account.Industry,Contact.Email).",
     )
+    extract_group.add_argument(
+        "--user-types",
+        default=None,
+        metavar="TYPE[,TYPE...]",
+        help="Restrict user extraction to the specified Salesforce UserType values "
+             "(comma-separated).  Common values: Standard, PowerPartner, "
+             "PowerCustomerSuccess, CsnOnly, Guest, SelfService. "
+             "Example: --user-types Standard,CsnOnly  (omit to include all types).",
+    )
+    extract_group.add_argument(
+        "--exclude-username-pattern",
+        default=None,
+        metavar="PATTERN",
+        help="Exclude users whose Username matches this SOQL LIKE pattern. "
+             "Use %% as a wildcard. "
+             "Example: --exclude-username-pattern '%%@00D%%.invalid'",
+    )
 
     # BloodHound CE integration
     bh_group = parser.add_argument_group("BloodHound CE integration")
@@ -398,6 +415,54 @@ def add_placeholder_profiles_for_users(users: dict, profiles: dict, graph: "SFGr
     print(f"[!] Added {len(missing)} placeholder Profile nodes to prevent dangling edges.")
 
 
+def hydrate_missing_users(graph: "SFGraph", filter_label: str) -> None:
+    """
+    After all edges are built, scan for dangling edge endpoints whose IDs carry
+    the Salesforce User key prefix (``005``).  Any such ID belongs to a user
+    that was excluded by the active collection filter (e.g. ``--user-types``).
+
+    For each missing user ID a minimal stub ``SFUser`` node is injected so that
+    the OpenGraph schema remains valid.  The stub carries two properties that
+    make its origin transparent to analysts querying BloodHound:
+
+    * ``partial_collection``  — boolean ``true``; filterable in Cypher.
+    * ``collection_note``     — human-readable description of the active filter.
+
+    Nodes for IDs already present in the graph are never touched.
+    """
+    isolated = graph.get_isolated_edges()
+    if not isolated:
+        return
+
+    missing_user_ids: set[str] = set()
+    for edge in isolated:
+        for node_id in (edge.start_node, edge.end_node):
+            if node_id and node_id.startswith("005") and not graph.get_node_by_id(node_id):
+                missing_user_ids.add(node_id)
+
+    if not missing_user_ids:
+        return
+
+    note = filter_label or "filtered collection"
+    for uid in sorted(missing_user_ids):
+        graph.add_or_merge_node(
+            make_node(
+                uid,
+                ["SFUser"],
+                {
+                    "name": "[Out-of-Scope User]",
+                    "partial_collection": True,
+                    "collection_note": note,
+                },
+            )
+        )
+
+    print(
+        f"[+] Hydrated {len(missing_user_ids)} out-of-scope SFUser stub node(s) "
+        f"({note})"
+    )
+
+
 def build_output_dir(config: dict) -> tuple:
     """Return (base_output_dir, org_subdomain, timestamp) for output file naming."""
     login_url = config["salesforce"]["login_url"]
@@ -514,6 +579,12 @@ def main():
     verbose = args.verbose
     fields_filter = args.fields
 
+    # Parse user-scoping filters
+    user_types = None
+    if args.user_types:
+        user_types = [t.strip() for t in args.user_types.split(",") if t.strip()]
+    exclude_username_pattern = args.exclude_username_pattern or None
+
     active_scopes = _parse_scopes(args.scope)
 
     base_dir, org_subdomain, timestamp = build_output_dir(config)
@@ -532,7 +603,17 @@ def main():
     EMPTY = {"records": []}
 
     metadata_extractor = MetadataExtractor(auth, throttle=throttle)
-    assignment_extractor = AssignmentExtractor(auth, throttle=throttle)
+    assignment_extractor = AssignmentExtractor(
+        auth,
+        throttle=throttle,
+        user_types=user_types,
+        exclude_username_pattern=exclude_username_pattern,
+    )
+
+    if user_types:
+        print(f"[~] User-type filter: {', '.join(user_types)}")
+    if exclude_username_pattern:
+        print(f"[~] Excluding usernames matching: {exclude_username_pattern}")
 
     if active_scopes:
         needed_meta   = set().union(*(SCOPE_METADATA_EXTRACTORS[s]  for s in active_scopes))
@@ -711,6 +792,17 @@ def main():
     _add_edges(edge_builder.build_permission_set_system_permissions(permission_sets, org_node_id))
     _add_edges(edge_builder.build_permission_set_group_assignments(permission_set_group_assignments))
     _add_edges(edge_builder.build_permission_set_group_components(permission_set_group_components))
+
+    # ------------------------------------------------------------------
+    # Hydrate stub nodes for out-of-scope users referenced by edges
+    # ------------------------------------------------------------------
+    _filter_parts = []
+    if user_types:
+        _filter_parts.append(f"--user-types {', '.join(user_types)}")
+    if exclude_username_pattern:
+        _filter_parts.append(f"--exclude-username-pattern {exclude_username_pattern}")
+    _filter_label = "; ".join(_filter_parts)
+    hydrate_missing_users(graph, _filter_label)
 
     # ------------------------------------------------------------------
     # Export
